@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  OmniCare HealthSync - AWS Communication Developer Services (CDS) & Amazon Bedrock AgentCore
+  Automated Infrastructure Deployment Stack for AWS CDS Agentic AI Partner Hackathon 2026
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'production'
+    Description: Deployment target environment
+
+  SESVerifiedEmail:
+    Type: String
+    Default: 'care@omnicare.aws'
+    Description: Verified sender identity for Amazon SES
+
+Resources:
+  # ===========================================================================
+  # 1. DynamoDB: Unified Omnichannel State Table
+  # ===========================================================================
+  PatientSessionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'OmniCare-Sessions-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: OmniCare-HealthSync
+        - Key: Hackathon
+          Value: AWS-CDS-Agentic-AI-2026
+
+  # ===========================================================================
+  # 2. Amazon SES v2 Email Identity
+  # ===========================================================================
+  SESEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref SESVerifiedEmail
+
+  # ===========================================================================
+  # 3. IAM Role for Bedrock Agent & Lambda Execution
+  # ===========================================================================
+  OmniCareLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'OmniCare-ExecutionRole-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+                - bedrock.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: OmniCareCDSAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Amazon Bedrock Agent & Model Invocation
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                  - bedrock:GetAgent
+                  - bedrock:InvokeAgent
+                Resource: '*'
+              # AWS End User Messaging (SMS & RCS)
+              - Effect: Allow
+                Action:
+                  - sms-voice:SendTextMessage
+                  - sms-voice:SendMediaMessage
+                  - sms-voice:DescribePhoneNumbers
+                Resource: '*'
+              # AWS End User Messaging Social (WhatsApp)
+              - Effect: Allow
+                Action:
+                  - socialmessaging:SendWhatsAppMessage
+                  - socialmessaging:GetWhatsAppMessageSubmission
+                Resource: '*'
+              # Amazon SES
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+              # DynamoDB Access
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource: !GetAtt PatientSessionTable.Arn
+
+  # ===========================================================================
+  # 4. Lambda Function: Omnichannel Webhook & Bedrock Router
+  # ===========================================================================
+  OmniCareRouterLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'OmniCare-Router-${Environment}'
+      Runtime: python3.11
+      Handler: backend.server.lambda_handler
+      MemorySize: 512
+      Timeout: 30
+      Role: !GetAtt OmniCareLambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PatientSessionTable
+          SES_SENDER_EMAIL: !Ref SESVerifiedEmail
+          SIMULATION_MODE: 'false'
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {
+                  "statusCode": 200,
+                  "body": "OmniCare HealthSync AWS CDS Router Live"
+              }
+
+  # ===========================================================================
+  # 5. API Gateway for Public CDS Webhook Callbacks
+  # ===========================================================================
+  OmniCareApiGateway:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub 'OmniCare-CDS-Webhooks-${Environment}'
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+
+Outputs:
+  DynamoDBTableName:
+    Description: DynamoDB Unified Omnichannel State Table
+    Value: !Ref PatientSessionTable
+
+  LambdaFunctionArn:
+    Description: Omnichannel Bedrock Router Lambda
+    Value: !GetAtt OmniCareRouterLambda.Arn
+
+  ApiGatewayEndpoint:
+    Description: Inbound Webhook URL for AWS CDS Callbacks
+    Value: !GetAtt OmniCareApiGateway.ApiEndpoint

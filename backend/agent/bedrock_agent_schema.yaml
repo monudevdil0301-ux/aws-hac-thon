@@ -1,0 +1,119 @@
+openapi: 3.0.0
+info:
+  title: OmniCare Bedrock Agent Action Groups
+  version: 1.0.0
+  description: OpenAPI specifications for Amazon Bedrock AgentCore tools connecting to AWS Communication Developer Services (CDS).
+paths:
+  /extract-prescription:
+    post:
+      summary: Extracts clinical information from prescription image or text via Multimodal Vision
+      description: Invokes Bedrock Multimodal Claude/Nova to parse medications, dosage instructions, and refill quantity.
+      operationId: extractPrescriptionDetails
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image_s3_uri:
+                  type: string
+                  description: S3 URI or public URL of prescription image
+                raw_text:
+                  type: string
+                  description: Transcribed text if uploaded via WhatsApp text
+              required:
+                - raw_text
+      responses:
+        '200':
+          description: Parsed clinical prescription entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  medication:
+                    type: string
+                  dosage:
+                    type: string
+                  frequency:
+                    type: string
+                  refill_count:
+                    type: integer
+
+  /search-pharmacy-slots:
+    get:
+      summary: Searches nearby accredited pharmacies with real-time inventory
+      description: Returns pickup location candidates formatted for AWS End User Messaging (RCS Rich Cards).
+      operationId: searchPharmacySlots
+      parameters:
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: medication_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of available pharmacy slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    pharmacy_id:
+                      type: string
+                    name:
+                      type: string
+                    distance_miles:
+                      type: number
+                    next_pickup_slot:
+                      type: string
+
+  /dispatch-omnichannel-handoff:
+    post:
+      summary: Dispatches multi-channel notification via AWS CDS
+      description: Intelligently routes communication to WhatsApp, RCS Rich Card, or Amazon SES Email.
+      operationId: dispatchOmnichannelHandoff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target_channel:
+                  type: string
+                  enum: [whatsapp, rcs, ses]
+                recipient_identifier:
+                  type: string
+                payload_type:
+                  type: string
+                  enum: [intake_ack, pickup_card, clinical_summary_email]
+              required:
+                - target_channel
+                - recipient_identifier
+                - payload_type
+      responses:
+        '200':
+          description: AWS CDS dispatch confirmation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message_id:
+                    type: string
+                  status:
+                    type: string
