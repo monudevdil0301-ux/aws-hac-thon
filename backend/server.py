@@ -1188,13 +1188,29 @@ HTML_SAAS_DASHBOARD = """<!DOCTYPE html>
 """
 
 class DashboardHTTPHandler(BaseHTTPRequestHandler):
+    # Path to the new premium frontend dashboard (relative to project root)
+    DASHBOARD_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "frontend", "dashboard.html"
+    )
+
+    def log_message(self, format, *args):
+        # Suppress noisy access logs — keep terminal clean for demo
+        pass
+
     def do_GET(self):
         url_parsed = urllib.parse.urlparse(self.path)
         if url_parsed.path == "/" or url_parsed.path == "/index.html":
-            encoded_html = HTML_SAAS_DASHBOARD.encode("utf-8")
+            # Serve new premium dashboard from disk; fallback to embedded
+            if os.path.exists(self.DASHBOARD_PATH):
+                with open(self.DASHBOARD_PATH, "rb") as f:
+                    encoded_html = f.read()
+            else:
+                encoded_html = HTML_SAAS_DASHBOARD.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded_html)))
+            self.send_header("Cache-Control", "no-cache")
             self.end_headers()
             self.wfile.write(encoded_html)
         elif url_parsed.path == "/api/state":
