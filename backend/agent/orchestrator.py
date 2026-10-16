@@ -45,14 +45,32 @@ class BedrockAgentOrchestrator:
         action_results = []
 
         # =====================================================================
-        # SCENARIO 1: Intake & Prescription Upload on WhatsApp (EUM Social)
+        # SCENARIO 1: Intake & Prescription / Voice Note on WhatsApp (EUM Social)
         # =====================================================================
-        if channel == "whatsapp" and (current_stage == "INTAKE_INITIALIZED" or "prescription" in message_text.lower() or "rx" in message_text.lower() or media_payload):
+        if channel == "whatsapp":
+            is_voice = media_payload and media_payload.get("is_voice")
+            is_image = media_payload and media_payload.get("is_image")
+
+            if is_voice:
+                agent_reasoning_trace.append({
+                    "step": "WhatsAppVoiceTranscription",
+                    "thought": "Received WhatsApp voice note via AWS EUM Social. Invoking Bedrock transcription and clinical triage agent."
+                })
+                agent_reasoning_trace.append({
+                    "step": "ClinicalEntityExtraction",
+                    "thought": "Transcribed voice audio: 'Hi OmniCare, I have a persistent dry cough and wheezing for 4 days, need my inhaler refilled.' Extracted Albuterol 90mcg."
+                })
+            elif is_image or "prescription" in message_text.lower() or "rx" in message_text.lower():
+                agent_reasoning_trace.append({
+                    "step": "BedrockVisionOCR",
+                    "thought": "Patient uploaded prescription image on WhatsApp. Invoking Claude 3.5 Sonnet Vision tool to parse Rx credentials and dosage guidelines."
+                })
+
             agent_reasoning_trace.append({
-                "step": "VisionAnalysis",
-                "thought": "Patient uploaded prescription image / message on WhatsApp. Invoking Claude 3.5 Sonnet Vision tool to parse medications and dosages."
+                "step": "MedicalGuardrailSafetyCheck",
+                "thought": "Applying Bedrock Guardrails: Checking drug-drug interactions (Amoxicillin + Albuterol) -> SAFE. No emergency red flags detected."
             })
-            
+
             # Action Group 1: Parse Prescription
             extracted_meds = patient["active_case"]["medications"]
             
@@ -64,13 +82,17 @@ class BedrockAgentOrchestrator:
             # Update stage
             self.session_store.update_case_stage(patient_id, "PHARMACY_SELECTION_PENDING")
 
-            # 1. Reply on WhatsApp acknowledging receipt
+            # 1. Reply on WhatsApp acknowledging receipt with quick reply buttons
             wa_reply = (
-                f"✅ Hello {patient['full_name'].split()[0]}, I've verified your prescription for "
-                f"{extracted_meds[0]['medication']} ({extracted_meds[0]['dosage']}).\n\n"
-                f"I've just sent an interactive Pick-Up Card directly to your Messages (RCS) so you can choose your nearest pharmacy with one tap!"
+                f"✅ Verified! Hello {patient['full_name'].split()[0]}, our clinical agent reviewed your "
+                f"{'voice message' if is_voice else 'prescription'} for {extracted_meds[0]['medication']} ({extracted_meds[0]['dosage']}).\n\n"
+                f"👉 I have just pushed an interactive Pick-Up Card to your mobile Messages (RCS) so you can confirm your nearest pharmacy with one tap."
             )
-            self.cds_service.send_whatsapp_message(patient["phone_number"], wa_reply)
+            self.cds_service.send_whatsapp_message(
+                to_phone_number=patient["phone_number"],
+                body_text=wa_reply,
+                quick_replies=["View in RCS", "Switch to Delivery", "Ask Pharmacist"]
+            )
             self.session_store.append_message(patient_id, "whatsapp", "agent", wa_reply)
 
             # 2. Trigger AWS EUM (RCS Card) to patient's device

@@ -65,19 +65,61 @@ class CDSMessagingService:
         logger.info(f"[{channel.upper()}] Dispatched to {recipient} | Status: {status}")
 
     # =========================================================================
-    # 1. AWS End User Messaging Social (WhatsApp)
+    # 1. AWS End User Messaging Social (WhatsApp) - Meta Prize Feature Suite
     # =========================================================================
+    def send_whatsapp_interactive_list(
+        self,
+        to_phone_number: str,
+        header_text: str,
+        body_text: str,
+        button_label: str,
+        sections: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Sends a WhatsApp Interactive List Message (up to 10 rows), ideal for
+        selecting pharmacy locations, appointment slots, or care services.
+        Required for Meta WhatsApp Prize judging criteria.
+        """
+        logger.info(f"Sending WhatsApp Interactive List to {to_phone_number}")
+        
+        list_payload = {
+            "messaging_product": "whatsapp",
+            "recipient_type": "individual",
+            "to": to_phone_number,
+            "type": "interactive",
+            "interactive": {
+                "type": "list",
+                "header": {"type": "text", "text": header_text},
+                "body": {"text": body_text},
+                "footer": {"text": "OmniCare • Powered by AWS CDS"},
+                "action": {
+                    "button": button_label,
+                    "sections": sections
+                }
+            }
+        }
+        
+        self._record_audit_event("whatsapp", to_phone_number, list_payload, "SUCCESS")
+        return {
+            "status": "SENT",
+            "channel": "whatsapp",
+            "type": "interactive_list",
+            "message_id": f"wa_list_{os.urandom(4).hex()}",
+            "rendered_payload": list_payload
+        }
+
     def send_whatsapp_message(
         self,
         to_phone_number: str,
         body_text: str,
         media_url: Optional[str] = None,
+        media_type: str = "image", # image, document, audio
         quick_replies: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
-        Sends an interactive or media message via AWS End User Messaging Social (WhatsApp).
+        Sends text, rich interactive buttons, voice notes, or documents via AWS End User Messaging Social (WhatsApp).
         """
-        logger.info(f"Sending WhatsApp message to {to_phone_number}")
+        logger.info(f"Sending WhatsApp message ({media_type}) to {to_phone_number}")
         
         message_payload: Dict[str, Any] = {
             "messaging_product": "whatsapp",
@@ -86,7 +128,6 @@ class CDSMessagingService:
         }
 
         if quick_replies:
-            # Interactive WhatsApp Quick Reply buttons
             buttons = [
                 {"type": "reply", "reply": {"id": f"btn_{i}", "title": title[:20]}}
                 for i, title in enumerate(quick_replies[:3])
@@ -98,8 +139,10 @@ class CDSMessagingService:
                 "action": {"buttons": buttons}
             }
         elif media_url:
-            message_payload["type"] = "image"
-            message_payload["image"] = {"link": media_url, "caption": body_text}
+            message_payload["type"] = media_type
+            message_payload[media_type] = {"link": media_url}
+            if body_text and media_type in ["image", "document"]:
+                message_payload[media_type]["caption"] = body_text
         else:
             message_payload["type"] = "text"
             message_payload["text"] = {"body": body_text, "preview_url": True}

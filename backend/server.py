@@ -354,21 +354,36 @@ HTML_COCKPIT = """<!DOCTYPE html>
 
     <div class="main-layout">
         <!-- 1. WhatsApp Screen (AWS EUM Social) -->
-        <div class="device-col">
-            <div class="device-header">
+        <div class="device-col" style="border-color: rgba(37, 211, 102, 0.4);">
+            <div class="device-header" style="background: #064e3b;">
                 <div class="device-title">
                     <span style="color: #25d366; font-size: 16px;">💬</span>
-                    WhatsApp (AWS EUM Social)
+                    <span>WhatsApp (AWS EUM Social)</span>
                 </div>
-                <span style="font-size: 11px; color: #64748b;">E.164 Identity</span>
+                <span style="font-size: 10px; background: #047857; color: #a7f3d0; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Meta WhatsApp Prize</span>
             </div>
             <div class="screen" id="wa-screen">
                 <div class="msg msg-wa-in">
-                    👋 Welcome to OmniCare HealthSync. Reply here or send a photo of your prescription to initiate refill triage.
+                    👋 Welcome to OmniCare HealthSync.<br><br>
+                    <strong>Meta WhatsApp Features Active:</strong><br>
+                    • 📷 Prescription Photo OCR (Bedrock Vision)<br>
+                    • 🎙️ Audio Voice Note Triage<br>
+                    • 🔘 Interactive Quick-Reply Buttons
                 </div>
             </div>
+            
+            <!-- Quick WhatsApp Meta Action Triggers -->
+            <div style="background: #111e18; padding: 6px 10px; display: flex; gap: 6px; border-top: 1px solid #1f3d2f;">
+                <button onclick="simulateWhatsAppPhoto()" style="flex: 1; background: #065f46; color: #6ee7b7; border: 1px solid #059669; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                    📷 Upload Rx Photo
+                </button>
+                <button onclick="simulateWhatsAppVoice()" style="flex: 1; background: #065f46; color: #6ee7b7; border: 1px solid #059669; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                    🎙️ Send Voice Note
+                </button>
+            </div>
+
             <div class="device-input-bar">
-                <input type="text" id="wa-input" placeholder="Upload prescription or type...">
+                <input type="text" id="wa-input" placeholder="Type message in WhatsApp...">
                 <button onclick="sendWhatsApp()">Send</button>
             </div>
         </div>
@@ -569,20 +584,42 @@ HTML_COCKPIT = """<!DOCTYPE html>
             rcsScreen.scrollTop = rcsScreen.scrollHeight;
         }
 
-        async function runWinningScenario() {
-            logTrace("SimulationStarted", "Triggering inbound prescription intake on WhatsApp (AWS EUM Social)...");
-            
-            // 1. WhatsApp Upload
-            document.getElementById("wa-screen").innerHTML += `
+        async function simulateWhatsAppPhoto() {
+            logTrace("MetaWhatsApp_Media", "Patient clicked 'Attach Image' on WhatsApp. Uploading Rx_Amoxicillin_500mg.jpg...");
+            const waScreen = document.getElementById("wa-screen");
+            waScreen.innerHTML += `
                 <div class="msg msg-wa-out">
-                    📷 <em>Uploaded: Rx_Amoxicillin_500mg.jpg</em><br>
-                    Hi, can you refill this prescription for my bronchitis?
+                    📷 <em>Image attached: Rx_Amoxicillin_500mg.jpg</em><br>
+                    Please refill this prescription for my bronchitis.
                 </div>
             `;
-            const step1 = await triggerBackend("whatsapp", "Uploaded prescription Rx_Amoxicillin_500mg.jpg for bronchitis", { is_image: true });
-            handleResponse(step1);
+            waScreen.scrollTop = waScreen.scrollHeight;
+            const res = await triggerBackend("whatsapp", "Uploaded Rx_Amoxicillin_500mg.jpg", { is_image: true });
+            handleResponse(res);
+        }
 
-            // 2. Wait 2 seconds, then simulate patient tapping RCS chip
+        async function simulateWhatsAppVoice() {
+            logTrace("MetaWhatsApp_Audio", "Patient recorded 12-second WhatsApp voice note (audio/ogg). Uploading to AWS EUM Social...");
+            const waScreen = document.getElementById("wa-screen");
+            waScreen.innerHTML += `
+                <div class="msg msg-wa-out" style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 18px;">▶️</span>
+                    <div>
+                        <div style="font-weight: 600; font-size: 12px;">Voice Note (0:12)</div>
+                        <div style="font-size: 11px; opacity: 0.8;">"Persistent cough and wheezing..."</div>
+                    </div>
+                </div>
+            `;
+            waScreen.scrollTop = waScreen.scrollHeight;
+            const res = await triggerBackend("whatsapp", "Audio note: Persistent cough and wheezing", { is_voice: true });
+            handleResponse(res);
+        }
+
+        async function runWinningScenario() {
+            logTrace("SimulationStarted", "Triggering inbound prescription intake on WhatsApp (AWS EUM Social)...");
+            await simulateWhatsAppPhoto();
+
+            // 2. Wait 2.5 seconds, then simulate patient tapping RCS chip
             setTimeout(async () => {
                 logTrace("UserInteraction", "Patient received rich RCS card and tapped 'CVS Health (0.4 mi) - 2:30 PM'...");
                 const step2 = await triggerBackend("rcs", "CVS Health (0.4 mi) - 2:30 PM", null);
