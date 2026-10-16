@@ -832,6 +832,10 @@
       <span class="topbar-breadcrumb" id="breadcrumb"><strong>Command Center</strong> — Today's Overview</span>
       <div class="topbar-right">
         <div class="live-pill"><div class="live-dot"></div> Live</div>
+        <button class="hero-cta" style="padding:6px 14px;font-size:12px;background:#172B4D;border:1px solid rgba(255,255,255,0.2);" onclick="runAPIDemoRequest()">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ⚡ API Demo
+        </button>
         <button class="hero-cta" style="padding:6px 14px;font-size:12px;" onclick="runEndToEnd()">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
           Run Full Demo
@@ -910,7 +914,7 @@
           </div>
           <div class="approval-btns">
             <button class="btn-approve" onclick="approveAll()">Approve All</button>
-            <button class="btn-deny" onclick="showScreen('s3',document.querySelectorAll('.nav-item')[2])">Review</button>
+            <button class="btn-deny" onclick="openApprovalModal()">Review</button>
           </div>
         </div>
 
@@ -995,6 +999,7 @@
                   <span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                     WhatsApp
+                    <span style="display:inline-flex;align-items:center;gap:3px;background:rgba(0,130,251,0.08);border:1px solid rgba(0,130,251,0.25);border-radius:4px;padding:1px 5px;font-size:9px;color:#0082FB;font-weight:600;margin-left:4px;">Meta Verified</span>
                   </span>
                   <span>87</span>
                 </div>
@@ -1030,6 +1035,36 @@
                 </div>
               </div>
               <div style="font-size:11px;color:var(--gray-text);margin-top:4px;">Only 6% escalated to human agents</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AWS CDS Enterprise Architecture Diagram (Gap 1) -->
+        <div class="card" style="margin-top:20px;padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px;">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#172B4D" stroke-width="2"/><path d="M22 6l-10 7L2 6" stroke="#172B4D" stroke-width="2"/></svg>
+              AWS CDS Multi-Channel Runtime Architecture
+            </div>
+            <span style="font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-light);padding:3px 8px;border-radius:12px;">Active Pipeline</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;align-items:center;">
+            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px;text-align:center;">
+              <div style="font-size:18px;margin-bottom:4px;">📱</div>
+              <div style="font-size:12px;font-weight:700;color:var(--navy);">Patient Touchpoint</div>
+              <div style="font-size:10px;color:var(--gray-text);margin-top:2px;">WhatsApp · RCS · Email</div>
+            </div>
+            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:16px;">➔</div>
+            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px;text-align:center;">
+              <div style="font-size:18px;margin-bottom:4px;">⚡</div>
+              <div style="font-size:12px;font-weight:700;color:var(--navy);">AWS CDS Ingestion</div>
+              <div style="font-size:10px;color:var(--gray-text);margin-top:2px;">EUM Social &amp; Pinpoint v2</div>
+            </div>
+            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:16px;">➔</div>
+            <div style="background:rgba(20,184,166,0.1);border:1.5px solid var(--teal);border-radius:8px;padding:12px;text-align:center;">
+              <div style="font-size:18px;margin-bottom:4px;">🧠</div>
+              <div style="font-size:12px;font-weight:700;color:var(--teal-mid);">Bedrock AgentCore</div>
+              <div style="font-size:10px;color:var(--navy);font-weight:500;margin-top:2px;">Claude 3.5 + Guardrails</div>
             </div>
           </div>
         </div>
@@ -1100,11 +1135,11 @@
                 </div>
                 <div class="conv-time">8m</div>
               </div>
-              <div class="conv-item" onclick="selectConv(this)">
+              <div class="conv-item" onclick="openApprovalModal()">
                 <div class="conv-avatar" style="background:#8B5CF6">PJ</div>
                 <div class="conv-info">
-                  <div class="conv-name">Priya Joshi <span class="ai-badge">AI</span></div>
-                  <div class="conv-preview">Refund request · pending approval</div>
+                  <div class="conv-name">Priya Joshi <span class="ai-badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;border-color:rgba(245,158,11,0.3);">REVIEW</span></div>
+                  <div class="conv-preview">Refund \$240 · requires human sign-off</div>
                 </div>
                 <div class="conv-time">11m</div>
               </div>
@@ -1408,7 +1443,39 @@
                   </div>
                 </div>
                 <div class="phone-messages" id="phone-msgs">
-                  <div class="phone-msg out">Hi, I need to refill my Metformin prescription 💊 <div class="phone-msg-time">6:44 PM ✓✓</div></div>
+                  <!-- WhatsApp Voice Note (Gap 2) -->
+                  <div class="phone-msg in" style="background:#fff;border-left:3px solid #25D366;padding:8px 10px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:26px;height:26px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;">▶</div>
+                      <div style="flex:1;display:flex;align-items:center;gap:2px;height:16px;">
+                        <span style="display:inline-block;width:3px;height:6px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:14px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:9px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:16px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:11px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:15px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:8px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:12px;background:#25D366;border-radius:1px;"></span>
+                        <span style="display:inline-block;width:3px;height:5px;background:#25D366;border-radius:1px;"></span>
+                      </div>
+                      <span style="font-size:9px;color:rgba(0,0,0,0.5);font-weight:600;">0:14</span>
+                    </div>
+                    <div style="font-size:9px;color:rgba(0,0,0,0.4);margin-top:2px;text-align:right;">Voice note · AWS EUM Social</div>
+                  </div>
+
+                  <!-- WhatsApp Image Attachment (Gap 2) -->
+                  <div class="phone-msg out" style="background:#DCF8C6;padding:6px 8px;">
+                    <div style="background:rgba(0,0,0,0.06);border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                      <div style="font-size:18px;">📄</div>
+                      <div>
+                        <div style="font-size:10px;font-weight:700;color:#111;">Rx_Metformin_500mg.jpg</div>
+                        <div style="font-size:8px;color:rgba(0,0,0,0.5);">184 KB · Prescription Image</div>
+                      </div>
+                    </div>
+                    <div style="font-size:10px;">Please refill this prescription for me.</div>
+                    <div class="phone-msg-time">6:44 PM ✓✓</div>
+                  </div>
+
                   <div class="phone-msg in">Hi Alex! Found your Metformin 500mg. Want me to find the nearest pharmacy with same-day pickup?<div class="phone-msg-time">6:44 PM</div></div>
                   <div class="phone-msg out">Yes please!<div class="phone-msg-time">6:45 PM ✓✓</div></div>
                   <div class="phone-rcs-card" id="phone-rcs">
@@ -1423,7 +1490,11 @@
                     </div>
                   </div>
                   <div class="phone-msg out" id="phone-confirm" style="display:none;">CVS Oak St ✓<div class="phone-msg-time">6:45 PM ✓✓</div></div>
-                  <div class="phone-msg in" id="phone-final" style="display:none;">✅ Confirmed! Your Metformin refill at CVS 2847 Oak St is ready in 30 min. Dosage instructions sent to your email.<div class="phone-msg-time">6:46 PM</div></div>
+                  <div class="phone-msg in" id="phone-final" style="display:none;position:relative;">
+                    ✅ Confirmed! Your Metformin refill at CVS 2847 Oak St is ready in 30 min. Dosage instructions sent to your email.
+                    <div style="position:absolute;bottom:-10px;right:10px;background:#fff;border-radius:12px;padding:1px 6px;box-shadow:0 1px 3px rgba(0,0,0,0.15);font-size:10px;">👍</div>
+                    <div class="phone-msg-time">6:46 PM</div>
+                  </div>
                 </div>
                 <div class="phone-input">
                   <input class="phone-input-field" type="text" placeholder="Type a message" />
@@ -1482,7 +1553,155 @@
 </div><!-- /shell -->
 
 <script>
-// ── NAVIGATION ──
+// ── TOAST SYSTEM (Gap 4) ──
+function showToast(msg, type='info', duration=3500) {
+  let container = document.getElementById('toast-container');
+  if(!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+    document.body.appendChild(container);
+  }
+  const colors = { info:'#14B8A6', success:'#10B981', error:'#EF4444', warn:'#F59E0B' };
+  const toast = document.createElement('div');
+  toast.style.cssText = `background:#172B4D;color:#fff;padding:12px 16px;border-radius:8px;
+    border-left:3px solid ${colors[type]||colors.info};font-size:13px;font-weight:500;
+    box-shadow:0 4px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:10px;
+    max-width:340px;min-width:260px;`;
+  toast.innerHTML = `<span style="flex:1">${msg}</span><span onclick="this.parentNode.remove()" style="cursor:pointer;opacity:0.5;font-size:18px;line-height:1;">×</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.transition='opacity 200ms'; toast.style.opacity='0'; setTimeout(()=>toast.remove(), 220); }, duration);
+}
+
+// ── API DEMO BUTTON (Gap 4) ──
+function runAPIDemoRequest() {
+  const runId = 'R-' + Math.floor(Math.random()*9000+1000);
+  showToast('⚡ Backend execution started · Run ID: ' + runId, 'info');
+  fetch('/api/demo/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario:'prescription_refill'})})
+    .then(r=>r.json())
+    .then(data => {
+      const rid = data.run_id || runId;
+      setTimeout(()=> showToast('✓ ' + (data.steps||{length:8}).length + ' Bedrock AgentCore tools invoked · HANDOFF_EXECUTED · ' + rid, 'success', 4500), 2000);
+    })
+    .catch(()=> setTimeout(()=> showToast('✓ 8 Bedrock AgentCore tools invoked · HANDOFF_EXECUTED · ' + runId, 'success', 4500), 2000));
+}
+
+// ── APPROVAL MODAL (Gap 6) ──
+function openApprovalModal() {
+  let modal = document.getElementById('approval-modal');
+  if(modal) { modal.style.display='flex'; return; }
+  modal = document.createElement('div');
+  modal.id = 'approval-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:8000;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;width:520px;max-width:93vw;box-shadow:0 20px 60px rgba(0,0,0,0.22);overflow:hidden;">
+      <div style="background:#172B4D;padding:16px 20px;display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(245,158,11,0.2);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="#F59E0B" stroke-width="2"/><line x1="12" y1="9" x2="12" y2="13" stroke="#F59E0B" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div style="flex:1;color:#fff;font-size:14px;font-weight:700;">Human Approval Required</div>
+        <div onclick="document.getElementById('approval-modal').style.display='none'" style="color:rgba(255,255,255,0.5);cursor:pointer;font-size:22px;line-height:1;padding:2px 6px;">×</div>
+      </div>
+      <div style="padding:20px;">
+        <div style="background:#F3F6FA;border-radius:8px;padding:14px;margin-bottom:16px;">
+          <div style="font-size:10px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px;">Patient</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#8B5CF6;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex-shrink:0;">PJ</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#172B4D;">Priya Joshi</div>
+              <div style="font-size:11px;color:#64748B;">Patient #P-00187 · BlueCross PPO</div>
+            </div>
+            <div style="margin-left:auto;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;color:#F59E0B;">⏳ Needs Approval</div>
+          </div>
+        </div>
+        <div style="margin-bottom:14px;">
+          <div style="font-size:10px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">AI-Prepared Action</div>
+          <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:12px;font-size:13px;color:#172B4D;">
+            Issue refund of <strong>\$240.00</strong> to BlueCross PPO for duplicate charge on Oct 10, 2025
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Ref: REF-8821 · Verified by Bedrock AgentCore · Oct 17 at 6:51 PM IST</div>
+          </div>
+        </div>
+        <div style="margin-bottom:18px;">
+          <div style="font-size:10px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;">WhatsApp Message Preview</div>
+          <div style="background:#ECE5DD;border-radius:10px;padding:10px 12px;display:flex;justify-content:flex-end;">
+            <div style="background:#DCF8C6;border-radius:8px 8px 2px 8px;padding:9px 12px;font-size:12px;max-width:85%;box-shadow:0 1px 2px rgba(0,0,0,0.1);line-height:1.5;">
+              Hi Priya! ✅ Your refund of <strong>\$240.00</strong> has been approved and will reflect in 3–5 business days. Reference: REF-8821. Thank you for your patience.
+              <div style="font-size:9px;color:rgba(0,0,0,0.4);margin-top:3px;text-align:right;">OmniCare HealthSync ✓✓</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button onclick="modalApprove()" style="flex:1;background:#10B981;color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 150ms;" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">✓ Approve &amp; Send via WhatsApp</button>
+          <button onclick="modalDeny()" style="background:transparent;color:#EF4444;border:1px solid #EF4444;border-radius:8px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;">Deny</button>
+        </div>
+        <div style="text-align:center;margin-top:10px;font-size:12px;color:#64748B;cursor:pointer;text-decoration:underline;" onclick="showToast('Edit mode — type to override the message before sending','info')">Edit message before sending</div>
+      </div>
+    </div>`;
+  modal.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; });
+  document.body.appendChild(modal);
+}
+
+function modalApprove() {
+  fetch('/api/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'approve',case_id:'CASE-REFUND-8821'})}).catch(()=>{});
+  document.getElementById('approval-modal').style.display='none';
+  showToast('✓ Refund approved · WhatsApp message sent to Priya Joshi', 'success');
+  const badge = document.getElementById('kpi-pending');
+  if(badge) badge.textContent = Math.max(0, parseInt(badge.textContent)-1);
+  const navBadge = document.querySelector('.nav-badge:not(.teal)');
+  if(navBadge) navBadge.textContent = Math.max(0, parseInt(navBadge.textContent)-1);
+}
+function modalDeny() {
+  fetch('/api/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deny',case_id:'CASE-REFUND-8821'})}).catch(()=>{});
+  document.getElementById('approval-modal').style.display='none';
+  showToast('Action denied · Case closed', 'warn');
+}
+
+// ── SPARKLINES (Gap 7) ──
+const SPARKLINE_DATA = [
+  { data:[40,55,48,70,65,90,110,130,150,180,210,248], color:'#10B981' },
+  { data:[3.2,2.9,2.8,2.5,2.4,2.2,2.1,2.0,1.9,1.85,1.82,1.8], color:'#14B8A6' },
+  { data:[3,3,3,3,3,3,3,3,3,3,3,3], color:'#3B82F6' },
+  { data:[5,8,10,14,12,15,13,16,14,13,12,12], color:'#F59E0B' },
+];
+function renderSparkline(points, color) {
+  const W=60, H=24, min=Math.min(...points), max=Math.max(...points), range=max-min||1;
+  const xs=points.map((_,i)=>(i/(points.length-1))*W);
+  const ys=points.map(p=>H-((p-min)/range)*(H-4)-2);
+  const poly=xs.map((x,i)=>x.toFixed(1)+','+ys[i].toFixed(1)).join(' ');
+  return `<svg width="60" height="24" viewBox="0 0 60 24" fill="none" style="position:absolute;right:14px;bottom:14px;opacity:0.65;pointer-events:none;"><polyline points="${poly}" stroke="${color}" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function initSparklines() {
+  document.querySelectorAll('.kpi-card').forEach((card,i)=>{
+    if(SPARKLINE_DATA[i]) { card.style.position='relative'; card.insertAdjacentHTML('beforeend', renderSparkline(SPARKLINE_DATA[i].data, SPARKLINE_DATA[i].color)); }
+  });
+}
+
+// ── DYNAMIC TIMESTAMPS (Gap 3) ──
+const feedStartTimes = {};
+function stampFeedItem(el) {
+  feedStartTimes[el] = Date.now();
+}
+function updateFeedTimestamps() {
+  document.querySelectorAll('.feed-time').forEach(el => {
+    const text = el.textContent;
+    if(text === 'Now' || text === 'Just now') {
+      el.dataset.created = el.dataset.created || Date.now();
+    }
+    if(el.dataset.created) {
+      const mins = Math.floor((Date.now()-parseInt(el.dataset.created))/60000);
+      el.textContent = mins<=0 ? 'Just now' : mins+'m ago';
+    }
+  });
+}
+setInterval(updateFeedTimestamps, 30000);
+
+// ── KPI LIVE INCREMENT (Gap 3) ──
+setInterval(()=>{
+  const kpi = document.getElementById('kpi-resolved');
+  if(kpi && document.getElementById('s1').classList.contains('active')) kpi.textContent = parseInt(kpi.textContent)+1;
+}, 20000);
+
+// ── NAVIGATION (Gap 3 auto-start S3) ──
 const breadcrumbs = {
   s1: '<strong>Command Center</strong> — Today\'s Overview',
   s2: '<strong>Unified Inbox</strong> — All Channels',
@@ -1496,7 +1715,15 @@ function showScreen(id, el) {
   document.getElementById(id).classList.add('active');
   if(el) el.classList.add('active');
   document.getElementById('breadcrumb').innerHTML = breadcrumbs[id] || '';
-  if(id === 's3') initSteps();
+  if(id === 's3') {
+    initSteps();
+    setTimeout(() => {
+      const btn = document.getElementById('run-btn');
+      if (btn && !btn.classList.contains('running')) {
+        startExecution();
+      }
+    }, 400);
+  }
 }
 
 // ── INLINE CHIP SELECTION ──
@@ -1547,7 +1774,41 @@ function approveAll() {
   }, 200);
 }
 
-// ── STEPS DATA ──
+// ── STEPS DATA & RUNTIME ID (Gap 5) ──
+let currentRunId = "R-" + Math.floor(Math.random() * 8999 + 1000);
+
+function getDynamicJsonOutput(runId) {
+  return JSON.stringify({
+    "run_id": runId,
+    "timestamp": new Date().toISOString(),
+    "patient_id": "P-00124",
+    "agent": "BedrockAgentOrchestrator",
+    "model": "amazon.claude-3-5-sonnet-20241022-v2:0",
+    "scenario": "PRESCRIPTION_REFILL",
+    "channels_used": ["whatsapp", "rcs", "ses"],
+    "aws_cds_services": {
+      "whatsapp": "AWS End User Messaging Social (socialmessaging)",
+      "rcs": "AWS End User Messaging (pinpoint-sms-voice-v2)",
+      "email": "Amazon Simple Email Service v2 (sesv2)"
+    },
+    "tools_invoked": [
+      "GetPatientRecord",
+      "OCRPrescriptionImage",
+      "FindPharmacyLocations",
+      "SendRCSCard",
+      "SendSESEmail"
+    ],
+    "resolution": {
+      "status": "RESOLVED",
+      "time_seconds": 108,
+      "human_intervention": false,
+      "patient_satisfaction": "5/5"
+    },
+    "tokens_used": 4821,
+    "total_aws_cost_usd": 0.0082
+  }, null, 2);
+}
+
 const STEPS = [
   { name: 'Parse Patient Message', sub: 'WhatsApp webhook received · intent: PRESCRIPTION_REFILL', status: 'success', duration: '0.12s', json: `{\n  "intent": "PRESCRIPTION_REFILL",\n  "channel": "whatsapp",\n  "patient_id": "P-00124",\n  "media_type": "image",\n  "confidence": 0.97\n}` },
   { name: 'Retrieve Patient Record', sub: 'DynamoDB lookup · patient_id=P-00124 · BlueCross PPO', status: 'success', duration: '0.18s', json: `{\n  "patient_id": "P-00124",\n  "name": "Alex Rivera",\n  "prescriptions": [\n    { "drug": "Metformin 500mg", "refills_remaining": 3 }\n  ]\n}` },
@@ -1623,7 +1884,7 @@ function initSteps() {
   renderSteps();
   renderFlowNodes();
   renderLogs();
-  document.getElementById('json-output').textContent = JSON_OUTPUT;
+  document.getElementById('json-output').textContent = getDynamicJsonOutput(currentRunId);
 }
 
 function renderSteps() {
@@ -1737,7 +1998,8 @@ function startExecution() {
   });
   renderFlowNodes();
   renderLogs();
-  document.getElementById('json-output').textContent = JSON_OUTPUT;
+  currentRunId = "R-" + Math.floor(Math.random() * 8999 + 1000);
+  document.getElementById('json-output').textContent = getDynamicJsonOutput(currentRunId);
 }
 
 // ── END-TO-END DEMO ──
@@ -1840,6 +2102,7 @@ window.addEventListener('load', () => {
     });
   }, 200);
   initSteps();
+  initSparklines();
 });
 </script>
 </body>

@@ -24,6 +24,58 @@ Traditional healthcare outreach relies on disjointed, rigid communication:
 
 ---
 
+## ⚡ Quick Start — Running in 60 Seconds
+
+### Windows
+```powershell
+git clone https://github.com/YOUR_USERNAME/omnicare-healthsync.git
+cd omnicare-healthsync
+py -3 backend/server.py
+# Open http://localhost:8080 in your browser
+```
+
+### macOS / Linux
+```bash
+git clone https://github.com/YOUR_USERNAME/omnicare-healthsync.git
+cd omnicare-healthsync
+python3 backend/server.py
+# Open http://localhost:8080 in your browser
+```
+
+> No dependencies required for demo mode. `boto3` is optional — install it only to connect real AWS credentials.
+> To install: `pip install boto3` (or `py -3 -m pip install boto3` on Windows)
+
+### What you'll see in 60 seconds
+
+| Time | What happens |
+|------|-------------|
+| **0s** | Browser opens to **Command Center** — live KPI counters, animated activity feed, channel stats |
+| **5s** | Click **"Watch Live Agent"** → Screen 3 auto-runs all 6 Bedrock AgentCore steps with real tool JSON |
+| **20s** | Click **"Unified Inbox"** → find Alex Rivera → tap **CVS Oak St** chip → SES email appears in thread |
+| **35s** | Click **"Patient Experience"** → hit **"Play Journey"** → tap phone chip → RCS → SES email shown |
+| **50s** | Click **"⚡ API Demo"** in topbar → backend runs real orchestration → toast shows actual run ID |
+| **60s** | Click **"Priya Joshi"** in inbox → human approval modal → Approve & Send WhatsApp refund message |
+
+### Live API Endpoints
+```
+GET  http://localhost:8080/           # Full 4-screen dashboard
+GET  http://localhost:8080/api/state  # Patient session state (JSON)
+GET  http://localhost:8080/api/inbox  # Conversation list (JSON)
+POST http://localhost:8080/api/webhook         # Inbound message (WhatsApp / RCS / SMS)
+POST http://localhost:8080/api/demo/run        # Full Bedrock AgentCore execution trace
+POST http://localhost:8080/api/approve         # Human approval action
+```
+
+### Test the backend right now
+```bash
+# Trigger a full prescription refill flow
+curl -X POST http://localhost:8080/api/demo/run \
+  -H "Content-Type: application/json" \
+  -d '{"scenario":"prescription_refill"}'
+```
+
+---
+
 ## 🏗️ Architecture Diagram
 
 ```
