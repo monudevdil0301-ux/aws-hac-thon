@@ -1,7 +1,10 @@
 """
-OmniCare HealthSync - Interactive Omnichannel Server & Webhook API
-Serves both live REST webhooks for AWS API Gateway / AWS CDS callbacks
-AND a real-time web simulation cockpit for demonstrating the multi-channel workflow to judges.
+OmniCare HealthSync / RelayOps - Enterprise SaaS Dashboard Server
+Delivers a 4-Screen Enterprise Architecture:
+- Screen 1: Command Center (KPI metrics, live audit stream, hero 'Watch Live Agent' CTA)
+- Screen 2: Unified Inbox (Cross-channel continuous thread: WhatsApp -> RCS -> SES)
+- Screen 3: Agent Activity (Live Bedrock AgentCore vertical execution timeline & tool calls)
+- Screen 4: Customer Experience (Realistic interactive smartphone customer touchpoint)
 """
 
 import os
@@ -17,809 +20,1197 @@ from backend.services.cds_messaging import CDSMessagingService
 from backend.db.session_store import SessionMemoryManager
 from backend.agent.orchestrator import BedrockAgentOrchestrator
 
-# Global singletons
 cds_service = CDSMessagingService(simulation_mode=True)
 session_store = SessionMemoryManager(simulation_mode=True)
 orchestrator = BedrockAgentOrchestrator(session_store, cds_service)
 
-HTML_COCKPIT = """<!DOCTYPE html>
+# Seed additional mock inbox conversations for enterprise richness
+INBOX_CONVERSATIONS = [
+    {
+        "id": "conv_1",
+        "customer_name": "Alex Rivera",
+        "avatar": "AR",
+        "status": "In Progress",
+        "status_color": "teal",
+        "channels": ["whatsapp", "rcs", "ses"],
+        "issue": "Acute Bronchitis Refill & Pickup Scheduling",
+        "last_message": "Prescription verified via Bedrock Vision. Dispatched RCS card.",
+        "time": "Just now",
+        "active": True
+    },
+    {
+        "id": "conv_2",
+        "customer_name": "Elena Rostova",
+        "avatar": "ER",
+        "status": "Resolved",
+        "status_color": "emerald",
+        "channels": ["whatsapp", "ses"],
+        "issue": "Insulin Glargine Dosage Verification",
+        "last_message": "Amazon SES clinical titration chart sent & confirmed.",
+        "time": "14 min ago",
+        "active": False
+    },
+    {
+        "id": "conv_3",
+        "customer_name": "Marcus Vance",
+        "avatar": "MV",
+        "status": "Needs Approval",
+        "status_color": "amber",
+        "channels": ["rcs"],
+        "issue": "Specialty Biologic Prior-Auth Exception",
+        "last_message": "Pharmacist review required for dosage adjustment.",
+        "time": "42 min ago",
+        "active": False
+    },
+    {
+        "id": "conv_4",
+        "customer_name": "Sarah Jenkins",
+        "avatar": "SJ",
+        "status": "Resolved",
+        "status_color": "emerald",
+        "channels": ["whatsapp", "rcs"],
+        "issue": "Pediatric Antibiotic Formulation Swap",
+        "last_message": "Customer confirmed suspension swap via RCS tap.",
+        "time": "1 hr ago",
+        "active": False
+    }
+]
+
+HTML_SAAS_DASHBOARD = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniCare HealthSync &bull; AWS CDS & Bedrock AgentCore</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>OmniCare RelayOps &bull; AWS CDS & Bedrock AgentCore Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0b0f19;
-            --surface: #111827;
-            --surface-card: #1f2937;
-            --border: #2d3748;
-            --wa-green: #25d366;
-            --wa-teal: #128c7e;
-            --wa-dark-bg: #0b141a;
-            --wa-bubble-in: #202c33;
-            --wa-bubble-out: #005c4b;
-            --rcs-blue: #1a73e8;
-            --rcs-dark-bg: #1a1c1e;
-            --rcs-bubble-in: #2d3033;
-            --rcs-bubble-out: #0b57d0;
-            --ses-bg: #ffffff;
-            --aws-orange: #ff9900;
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
+            --bg-primary: #FFFFFF;
+            --surface-secondary: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --border-light: #E2E8F0;
+            --border-subtle: #EDF2F7;
+            --navy-deep: #172B4D;
+            --navy-sidebar: #0F172A;
+            --teal-primary: #14B8A6;
+            --teal-hover: #0D9488;
+            --teal-light: #F0FDFA;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --aws-orange: #FF9900;
+            --amber-alert: #F59E0B;
+            --emerald-success: #10B981;
+            --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+            --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --radius-md: 10px;
+            --radius-lg: 12px;
         }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-main);
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--surface-secondary);
+            color: var(--text-dark);
+            height: 100vh;
             display: flex;
-            flex-direction: column;
-        }
-        header {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 28px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-        .aws-logo-badge {
-            background: #232f3e;
-            border: 1px solid #ff9900;
-            color: #ff9900;
-            font-weight: 800;
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            letter-spacing: 0.5px;
-        }
-        .live-status-pill {
-            background: rgba(16, 185, 129, 0.12);
-            color: #10b981;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            font-size: 12px;
-            font-weight: 700;
-            padding: 5px 12px;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .pulse {
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .main-layout {
-            display: grid;
-            grid-template-columns: 370px 370px 420px 1fr;
-            gap: 20px;
-            padding: 20px 24px;
-            flex: 1;
-            overflow-x: auto;
-        }
-
-        /* Realistic Smartphone Mockup Framing */
-        .device-col {
-            border-radius: 28px;
-            display: flex;
-            flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 25px 40px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.08);
-            position: relative;
-        }
-        .phone-notch {
-            height: 22px;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .notch-camera {
-            width: 50px;
-            height: 10px;
-            background: #111;
-            border-radius: 10px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* 1. WhatsApp Native Styling */
-        .wa-container {
-            background: var(--wa-dark-bg);
-            border: 1px solid #1f2c34;
+        /* -------------------------------------------------------------
+           Persistent Left Sidebar
+        ------------------------------------------------------------- */
+        .sidebar {
+            width: 256px;
+            background-color: var(--navy-sidebar);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: #FFFFFF;
+            padding: 24px 16px;
+            flex-shrink: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .wa-header {
-            background: #202c33;
-            padding: 12px 16px;
+        .brand-block {
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 0 8px 24px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .wa-avatar {
-            width: 38px;
-            height: 38px;
-            background: #00a884;
-            border-radius: 50%;
+        .brand-logo {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-weight: 700;
-            font-size: 15px;
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
         }
-        .wa-chat-area {
-            flex: 1;
-            background-color: #0b141a;
-            background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
-            background-size: 18px 18px;
-            padding: 16px;
-            overflow-y: auto;
+        .nav-menu {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            min-height: 480px;
-            max-height: 520px;
+            gap: 4px;
+            margin-top: 20px;
         }
-        .wa-msg {
-            max-width: 84%;
-            padding: 9px 12px;
-            border-radius: 8px;
-            font-size: 13.5px;
-            line-height: 1.4;
-            word-wrap: break-word;
-            position: relative;
-        }
-        .wa-msg-in {
-            background: var(--wa-bubble-in);
-            color: #e9edef;
-            align-self: flex-start;
-            border-top-left-radius: 0px;
-        }
-        .wa-msg-out {
-            background: var(--wa-bubble-out);
-            color: #e9edef;
-            align-self: flex-end;
-            border-top-right-radius: 0px;
-        }
-        .wa-quick-replies {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 8px;
-        }
-        .wa-qr-btn {
-            background: #202c33;
-            color: #00a884;
-            border: 1px solid rgba(0, 168, 132, 0.4);
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12.5px;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .wa-qr-btn:hover {
-            background: #00a884;
-            color: #fff;
-        }
-        .wa-input-bar {
-            background: #202c33;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .wa-input-bar input {
-            flex: 1;
-            background: #2a3942;
-            border: none;
-            color: #fff;
-            padding: 9px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            outline: none;
-        }
-        .wa-input-bar button {
-            background: #00a884;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #fff;
-        }
-
-        /* 2. Google Messages / RCS Native Styling */
-        .rcs-container {
-            background: var(--rcs-dark-bg);
-            border: 1px solid #2d3033;
-        }
-        .rcs-header {
-            background: #24272b;
-            padding: 12px 16px;
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        .rcs-chat-area {
-            flex: 1;
-            background: #131517;
-            padding: 16px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            min-height: 480px;
-            max-height: 520px;
-        }
-        .rcs-msg {
-            max-width: 82%;
             padding: 10px 14px;
-            border-radius: 18px;
+            border-radius: var(--radius-md);
+            color: #94A3B8;
             font-size: 13.5px;
-            line-height: 1.45;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.18s ease;
         }
-        .rcs-msg-in {
-            background: var(--rcs-bubble-in);
-            color: #e3e3e3;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #FFFFFF;
         }
-        .rcs-msg-out {
-            background: var(--rcs-bubble-out);
-            color: #ffffff;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
+        .nav-item.active {
+            background-color: rgba(20, 184, 166, 0.12);
+            color: #14B8A6;
+            font-weight: 600;
         }
-        .rcs-rich-card {
-            background: #202327;
-            border: 1px solid #3c4043;
-            border-radius: 16px;
-            overflow: hidden;
-            width: 100%;
-            margin-top: 6px;
-            align-self: flex-start;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        .nav-item svg {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
         }
-        .rcs-card-img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-        .rcs-card-content {
-            padding: 14px;
-        }
-        .rcs-card-title {
-            font-size: 14.5px;
+        .badge-count {
+            margin-left: auto;
+            background: rgba(20, 184, 166, 0.2);
+            color: #14B8A6;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            font-size: 11px;
             font-weight: 700;
-            color: #8ab4f8;
-            margin-bottom: 6px;
         }
-        .rcs-card-body {
-            font-size: 12.5px;
-            color: #c4c7c5;
-            margin-bottom: 12px;
+        .sidebar-bottom {
+            padding: 16px 8px 0 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        .rcs-chips-container {
+        .aws-cds-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #94A3B8;
+        }
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background-color: #14B8A6;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.7);
+            animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(20, 184, 166, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+        }
+
+        /* -------------------------------------------------------------
+           Main Content Area
+        ------------------------------------------------------------- */
+        .app-main {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            overflow: hidden;
+            background-color: var(--surface-secondary);
         }
-        .rcs-chip-action {
-            background: #2a2e33;
-            border: 1px solid #8ab4f8;
-            color: #8ab4f8;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
+
+        /* Top Header Bar */
+        .top-navbar {
+            height: 64px;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            flex-shrink: 0;
         }
-        .rcs-chip-action:hover {
-            background: #8ab4f8;
-            color: #131517;
-        }
-        .rcs-input-bar {
-            background: #24272b;
-            padding: 10px 14px;
+        .breadcrumb-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--navy-deep);
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        .rcs-input-bar input {
+        .aws-partner-badge {
+            background-color: #F8FAFC;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-live-hero {
+            background-color: var(--teal-primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(20, 184, 166, 0.25);
+        }
+        .btn-live-hero:hover {
+            background-color: var(--teal-hover);
+        }
+
+        /* Screen View Panels */
+        .screen-view {
             flex: 1;
-            background: #1a1c1e;
-            border: 1px solid #3c4043;
-            color: #fff;
-            padding: 9px 14px;
+            overflow-y: auto;
+            padding: 28px 32px;
+            display: none;
+        }
+        .screen-view.active {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* -------------------------------------------------------------
+           Screen 1 — Command Center
+        ------------------------------------------------------------- */
+        .hero-banner {
+            background: linear-gradient(135deg, #172B4D 0%, #0F172A 100%);
+            color: #FFFFFF;
+            border-radius: var(--radius-lg);
+            padding: 28px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-card);
+        }
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+        }
+        .kpi-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-subtle);
+        }
+        .kpi-label {
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--navy-deep);
+            letter-spacing: -0.5px;
+        }
+        .kpi-sub {
+            font-size: 11.5px;
+            color: var(--teal-primary);
+            font-weight: 600;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dashboard-columns {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        .white-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            box-shadow: var(--shadow-subtle);
+        }
+        .card-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .card-heading {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy-deep);
+        }
+
+        /* Activity feed list item */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .feed-row {
+            padding: 14px;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+        .feed-row:hover {
+            border-color: var(--border-light);
+            background-color: var(--surface-secondary);
+        }
+        .feed-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .channel-chip {
+            padding: 4px 9px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .chip-wa { background: #DCFCE7; color: #15803D; }
+        .chip-rcs { background: #E0F2FE; color: #0369A1; }
+        .chip-ses { background: #FEF3C7; color: #B45309; }
+
+        /* -------------------------------------------------------------
+           Screen 2 — Unified Inbox
+        ------------------------------------------------------------- */
+        .inbox-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 20px;
+            height: calc(100vh - 120px);
+        }
+        .inbox-sidebar {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .inbox-thread-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .thread-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .thread-item:hover, .thread-item.active {
+            background-color: #F0FDFA;
+            border-left: 3px solid var(--teal-primary);
+        }
+        .thread-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .thread-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--navy-deep);
+        }
+
+        .conversation-pane {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .conv-topbar {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #FAFCFE;
+        }
+        .conv-stream {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .channel-handoff-banner {
+            align-self: center;
+            background: #F1F5F9;
+            border: 1px solid #CBD5E1;
+            color: #475569;
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 6px 0;
+        }
+
+        /* -------------------------------------------------------------
+           Screen 3 — Agent Activity (Timeline & Tool Calls)
+        ------------------------------------------------------------- */
+        .timeline-card {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+        }
+        .agent-timeline {
+            position: relative;
+            padding-left: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .agent-timeline::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background-color: #E2E8F0;
+        }
+        .timeline-step {
+            position: relative;
+        }
+        .step-circle {
+            position: absolute;
+            left: -32px;
+            top: 2px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--bg-primary);
+            border: 2px solid var(--teal-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--teal-primary);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .step-circle.done {
+            background-color: var(--teal-primary);
+            color: white;
+        }
+        .tool-call-box {
+            background-color: #0F172A;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #34D399;
+            overflow-x: auto;
+        }
+
+        /* -------------------------------------------------------------
+           Screen 4 — Customer Experience (Interactive Mobile Device)
+        ------------------------------------------------------------- */
+        .cx-layout {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 40px;
+            padding: 10px 0;
+        }
+        .mobile-device-frame {
+            width: 380px;
+            height: 720px;
+            background: #000000;
+            border-radius: 46px;
+            padding: 12px;
+            box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .device-screen-inner {
+            width: 100%;
+            height: 100%;
+            background: #FFFFFF;
+            border-radius: 36px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .phone-top-bar {
+            height: 40px;
+            background: #0B141A;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .phone-dynamic-island {
+            width: 90px;
+            height: 20px;
+            background: #000;
+            border-radius: 12px;
+            margin: 0 auto;
+        }
+        .mobile-app-header {
+            background: #1F2C34;
+            color: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mobile-chat-body {
+            flex: 1;
+            background-color: #EFEAE2;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bubble {
+            max-width: 82%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.06);
+        }
+        .bubble-in {
+            background: #FFFFFF;
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+        .bubble-out {
+            background: #D9FDD3;
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+        .rcs-rich-card-mobile {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+            border: 1px solid #E2E8F0;
+            margin-top: 6px;
+            align-self: flex-start;
+            width: 100%;
+        }
+        .mobile-input-bar {
+            padding: 10px 14px;
+            background: #F0F2F5;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .mobile-input-bar input {
+            flex: 1;
+            background: white;
+            border: none;
+            padding: 8px 14px;
             border-radius: 20px;
             font-size: 13px;
             outline: none;
         }
-        .rcs-input-bar button {
-            background: #8ab4f8;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            color: #131517;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* 3. SES Professional Email Client */
-        .email-container {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 24px;
-        }
-        .email-header {
-            background: #0f172a;
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #334155;
-        }
-        .email-body-area {
-            flex: 1;
-            padding: 14px;
-            overflow-y: auto;
-            min-height: 480px;
-            max-height: 520px;
-            background: #0f172a;
-        }
-        .email-letterhead {
-            background: #ffffff;
-            color: #1e293b;
-            border-radius: 12px;
-            padding: 18px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            font-size: 13px;
-        }
-
-        /* 4. Bedrock Telemetry Panel */
-        .telemetry-container {
-            background: #0a0e17;
-            border: 1px solid #1e293b;
-            border-radius: 24px;
-            display: flex;
-            flex-direction: column;
-            padding: 16px;
-        }
-        .telemetry-trace-box {
-            flex: 1;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11.5px;
-            background: #030712;
-            border: 1px solid #1f2937;
-            border-radius: 12px;
-            padding: 14px;
-            overflow-y: auto;
-            color: #6ee7b7;
-            line-height: 1.6;
-            max-height: 520px;
-        }
-
-        /* Interactive Runner Bar */
-        .action-dock {
-            background: #0f172a;
-            border-top: 1px solid #334155;
-            padding: 14px 28px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .primary-flow-btn {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-            transition: all 0.2s;
-        }
-        .primary-flow-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.6);
-        }
     </style>
 </head>
 <body>
-    <header>
-        <div class="brand">
-            <div class="aws-logo-badge">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#ff9900"/>
-                    <path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#ff9900" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                AWS CDS PARTNER
-            </div>
-            <div>
-                <h1 style="font-size: 17px; font-weight: 800; letter-spacing: -0.3px;">OmniCare HealthSync</h1>
-                <div style="font-size: 11.5px; color: #94a3b8;">Autonomous Clinical Concierge &bull; Amazon Bedrock AgentCore</div>
-            </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="font-size: 12px; color: #cbd5e1; background: #1e293b; padding: 5px 12px; border-radius: 8px; border: 1px solid #334155;">
-                Patient: <strong>Alex Rivera</strong> (+1 415-555-2671)
-            </div>
-            <div class="live-status-pill">
-                <div class="pulse"></div>
-                AWS CDS LIVE STREAM
-            </div>
-        </div>
-    </header>
-
-    <div class="main-layout">
-        <!-- 1. Authentic WhatsApp Phone -->
-        <div class="device-col wa-container">
-            <div class="phone-notch"><div class="notch-camera"></div></div>
-            <div class="wa-header">
-                <!-- Official WhatsApp Logo -->
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="#25d366">
-                    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2ZM12.04 20.15C10.56 20.15 9.11 19.76 7.85 19.01L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.8 13.47 3.8 11.91C3.8 7.37 7.5 3.67 12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15Z"/>
-                </svg>
-                <div class="wa-avatar">OC</div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; font-size: 13.5px; color: #e9edef; display: flex; align-items: center; gap: 4px;">
-                        OmniCare Health
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#00a884"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                    </div>
-                    <div style="font-size: 11px; color: #8696a0;">AWS End User Messaging Social</div>
-                </div>
-                <span style="font-size: 10px; background: rgba(0, 168, 132, 0.2); color: #25d366; padding: 2px 8px; border-radius: 9999px; font-weight: 700; border: 1px solid rgba(37, 211, 102, 0.4);">Meta WhatsApp</span>
-            </div>
-
-            <div class="wa-chat-area" id="wa-screen">
-                <div class="wa-msg wa-msg-in">
-                    Hello Alex! I am your autonomous care concierge. Send a photo of your prescription or a voice message to initiate your care plan.
-                </div>
-            </div>
-
-            <!-- Intuitive Meta Action Triggers -->
-            <div style="background: #182229; padding: 8px 12px; display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06);">
-                <button onclick="simulateWhatsAppPhoto()" style="flex: 1; background: #005c4b; color: #25d366; border: 1px solid #00a884; padding: 7px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                    Upload Rx Photo
-                </button>
-                <button onclick="simulateWhatsAppVoice()" style="flex: 1; background: #005c4b; color: #25d366; border: 1px solid #00a884; padding: 7px; border-radius: 8px; font-size: 11.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-                    Send Voice Note
-                </button>
-            </div>
-
-            <div class="wa-input-bar">
-                <input type="text" id="wa-input" placeholder="Type a message...">
-                <button onclick="sendWhatsApp()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- 2. Authentic Google Messages / RCS Phone -->
-        <div class="device-col rcs-container">
-            <div class="phone-notch"><div class="notch-camera"></div></div>
-            <div class="rcs-header">
-                <!-- Official Google Messages / RCS Logo -->
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="#1a73e8">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
-                </svg>
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; font-size: 13.5px; color: #fff;">OmniCare Care Center</div>
-                    <div style="font-size: 11px; color: #8ab4f8;">AWS End User Messaging &bull; RCS Verified</div>
-                </div>
-                <span style="font-size: 10px; background: rgba(26, 115, 232, 0.2); color: #8ab4f8; padding: 2px 8px; border-radius: 9999px; font-weight: 700; border: 1px solid rgba(26, 115, 232, 0.4);">RCS Active</span>
-            </div>
-
-            <div class="rcs-chat-area" id="rcs-screen">
-                <div class="rcs-msg rcs-msg-in" style="font-size: 12px; color: #9aa0a6;">
-                    🔒 Chatting with OmniCare (Verified). High-bandwidth RCS connected.
-                </div>
-            </div>
-
-            <div class="rcs-input-bar">
-                <input type="text" id="rcs-input" placeholder="Text message (RCS)...">
-                <button onclick="sendRCS()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- 3. Professional SES Email Client -->
-        <div class="device-col email-container">
-            <div class="email-header">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <!-- Official Email Envelope SVG -->
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b">
-                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-                    </svg>
-                    <span style="font-size: 13.5px; font-weight: 700; color: #fff;">Amazon SES Inbox</span>
-                </div>
-                <span style="font-size: 10px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 8px; border-radius: 9999px; font-weight: 700; border: 1px solid rgba(245, 158, 11, 0.3);">TLS &bull; DKIM Verified</span>
-            </div>
-
-            <div class="email-body-area" id="email-screen">
-                <div style="text-align: center; color: #64748b; font-size: 13px; margin-top: 50px;">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="#334155" style="margin-bottom: 10px;">
-                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/>
-                    </svg><br>
-                    Awaiting clinical discharge packet from Amazon SES...
-                </div>
-            </div>
-
-            <div style="padding: 10px 14px; background: #0b1120; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #334155;">
-                Automated clinical discharge protocols powered by Amazon SES v2
-            </div>
-        </div>
-
-        <!-- 4. Amazon Bedrock AgentCore Intelligence -->
-        <div class="telemetry-container">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#818cf8">
-                        <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2M7.5 13A2.5 2.5 0 0 0 5 15.5 2.5 2.5 0 0 0 7.5 18a2.5 2.5 0 0 0 2.5-2.5A2.5 2.5 0 0 0 7.5 13m9 0a2.5 2.5 0 0 0-2.5 2.5 2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5 2.5 2.5 0 0 0-2.5-2.5"/>
-                    </svg>
-                    <span style="font-weight: 700; font-size: 13.5px; color: #fff;">Bedrock AgentCore</span>
-                </div>
-                <span style="font-size: 11px; background: #1e1b4b; color: #a5b4fc; padding: 2px 8px; border-radius: 6px; font-weight: 600; border: 1px solid #4338ca;">Claude 3.5 Sonnet</span>
-            </div>
-            <div class="telemetry-trace-box" id="trace-box">
-                // System Initialized: Amazon Bedrock AgentCore.<br>
-                // Listening to AWS CDS Webhooks (WhatsApp, RCS, SES).<br>
-                // Click "Run Full Omnichannel Flow" below to experience live triage!
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Action Dock -->
-    <div class="action-dock">
+    <!-- Persistent Left Sidebar -->
+    <aside class="sidebar">
         <div>
-            <div style="font-weight: 700; font-size: 14px; color: #fff;">Interactive Omnichannel Experience</div>
-            <div style="font-size: 12px; color: #94a3b8;">Demonstrating seamless handoff across AWS EUM Social (WhatsApp) ➔ AWS EUM (RCS) ➔ Amazon SES</div>
+            <div class="brand-block">
+                <div class="brand-logo">R</div>
+                <div>
+                    <div style="font-weight: 700; font-size: 15px; letter-spacing: -0.2px;">relayops</div>
+                    <div style="font-size: 11px; color: #94A3B8;">Omnichannel AI Operations</div>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item active" onclick="switchScreen('command-center')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Command Center
+                </div>
+                <div class="nav-item" onclick="switchScreen('unified-inbox')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    Unified Inbox
+                    <span class="badge-count">3 Channels</span>
+                </div>
+                <div class="nav-item" onclick="switchScreen('agent-activity')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Agent Activity
+                    <span class="badge-count" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">Live</span>
+                </div>
+                <div class="nav-item" onclick="switchScreen('customer-experience')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Customer Experience
+                </div>
+            </nav>
         </div>
-        <button class="primary-flow-btn" onclick="runWinningScenario()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-            Run Full Omnichannel Flow (WhatsApp ➔ RCS ➔ SES)
-        </button>
-    </div>
 
-    <script>
-        function logTrace(step, thought) {
-            const box = document.getElementById("trace-box");
-            const entry = document.createElement("div");
-            entry.className = "trace-entry";
-            entry.innerHTML = `<span class="trace-step">[Bedrock AgentCore :: ${step}]</span><br>${thought}`;
-            box.appendChild(entry);
-            box.scrollTop = box.scrollHeight;
-        }
+        <div class="sidebar-bottom">
+            <div class="aws-cds-indicator">
+                <div class="pulse-dot"></div>
+                <span>AWS CDS Runtime</span>
+            </div>
+            <span style="font-size: 11px; color: #64748B;">v2.6-APN</span>
+        </div>
+    </aside>
 
-        async function triggerBackend(channel, text, media) {
-            try {
-                const res = await fetch("/api/webhook", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ channel, sender: "+14155552671", text, media })
-                });
-                return await res.json();
-            } catch (e) {
-                console.error(e);
-            }
-        }
+    <!-- Main Content Application -->
+    <main class="app-main">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="breadcrumb-title" id="screen-title">
+                <span>Command Center</span>
+                <span style="color: var(--text-subtle); font-weight: 400;">/</span>
+                <span style="font-weight: 500; font-size: 13px; color: var(--text-muted);">Overview & Operations</span>
+            </div>
 
-        async function sendWhatsApp() {
-            const input = document.getElementById("wa-input");
-            const val = input.value.trim();
-            if (!val) return;
-            input.value = "";
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="aws-partner-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#FF9900"/><path d="M2 17L12 22L22 17M2 12L12 17L22 12" stroke="#FF9900" stroke-width="2"/></svg>
+                    AWS CDS &bull; Bedrock AgentCore
+                </div>
+                <button class="btn-live-hero" onclick="triggerFullLiveDemo()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Live Agent Run
+                </button>
+            </div>
+        </header>
 
-            const screen = document.getElementById("wa-screen");
-            screen.innerHTML += `<div class="msg msg-wa-out">${val}</div>`;
-            screen.scrollTop = screen.scrollHeight;
+        <!-- SCREEN 1: Command Center -->
+        <section class="screen-view active" id="view-command-center">
+            <!-- Hero Banner -->
+            <div class="hero-banner">
+                <div>
+                    <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #14B8A6; letter-spacing: 0.5px;">Operational Intelligence</span>
+                    <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">Good evening. Here's what your AI agents have handled today.</h2>
+                    <p style="font-size: 13.5px; color: #94A3B8; margin-top: 4px;">Autonomous cross-channel resolution across WhatsApp, RCS, and Amazon SES.</p>
+                </div>
+                <button class="btn-live-hero" onclick="switchScreen('agent-activity')" style="padding: 10px 18px; font-size: 13.5px;">
+                    Explore Agent Activity &rarr;
+                </button>
+            </div>
 
-            const res = await triggerBackend("whatsapp", val, null);
-            handleResponse(res);
-        }
+            <!-- 4 Metric Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Resolved Conversations</div>
+                    <div class="kpi-value" id="kpi-resolved">248</div>
+                    <div class="kpi-sub">
+                        <span>&uarr; 94.2% AI Resolution Rate</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg. Resolution Time</div>
+                    <div class="kpi-value">1.8 <span style="font-size: 16px; font-weight: 500;">min</span></div>
+                    <div class="kpi-sub" style="color: #64748B;">
+                        <span>&darr; 84% vs manual human baseline</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Connected CDS Channels</div>
+                    <div class="kpi-value">3</div>
+                    <div class="kpi-sub">
+                        <span>WhatsApp &bull; RCS &bull; Amazon SES</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Awaiting Human Approval</div>
+                    <div class="kpi-value" style="color: #D97706;">2</div>
+                    <div class="kpi-sub" style="color: #D97706;">
+                        <span>Guardrail risk policy active</span>
+                    </div>
+                </div>
+            </div>
 
-        async function sendRCS(postbackVal) {
-            const input = document.getElementById("rcs-input");
-            const val = postbackVal || input.value.trim();
-            if (!val) return;
-            if (!postbackVal) input.value = "";
-
-            const screen = document.getElementById("rcs-screen");
-            screen.innerHTML += `<div class="msg msg-out">${val}</div>`;
-            screen.scrollTop = screen.scrollHeight;
-
-            const res = await triggerBackend("rcs", val, null);
-            handleResponse(res);
-        }
-
-        function handleResponse(res) {
-            if (!res) return;
-            if (res.reasoning_trace) {
-                res.reasoning_trace.forEach(t => logTrace(t.step, t.thought));
-            }
-            refreshAudit();
-        }
-
-        async function refreshAudit() {
-            const res = await fetch("/api/state");
-            const data = await res.json();
-
-            // Refresh WhatsApp
-            const waScreen = document.getElementById("wa-screen");
-            const rcsScreen = document.getElementById("rcs-screen");
-            const emailScreen = document.getElementById("email-screen");
-
-            waScreen.innerHTML = "";
-            rcsScreen.innerHTML = "";
-
-            data.conversation_history.forEach(m => {
-                if (m.channel === "whatsapp") {
-                    const cls = m.role === "user" ? "msg-wa-out" : "msg-wa-in";
-                    waScreen.innerHTML += `<div class="msg ${cls}">${m.content}</div>`;
-                } else if (m.channel === "rcs") {
-                    if (m.role === "user") {
-                        rcsScreen.innerHTML += `<div class="msg msg-out">${m.content}</div>`;
-                    } else if (m.content.includes("Dispatched RCS Pharmacy Selection Card") || data.active_case.stage === "PHARMACY_SELECTION_PENDING") {
-                        rcsScreen.innerHTML += `
-                            <div class="rcs-card">
-                                <img src="https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&w=600&q=80" alt="Pharmacy">
-                                <div class="rcs-card-body">
-                                    <div class="rcs-card-title">📍 Nearest Pharmacy Pick-up Ready</div>
-                                    <div class="rcs-card-desc">Amoxicillin 500mg is available nearby. Tap a slot to reserve instant pickup:</div>
-                                    <div class="rcs-chip-group">
-                                        <div class="rcs-chip" onclick="sendRCS('CVS Health (0.4 mi) - 2:30 PM')">CVS Health (0.4 mi) - 2:30 PM</div>
-                                        <div class="rcs-chip" onclick="sendRCS('Walgreens (1.1 mi) - 3:00 PM')">Walgreens (1.1 mi) - 3:00 PM</div>
-                                    </div>
+            <!-- Two-Column Operational Activity -->
+            <div class="dashboard-columns">
+                <div class="white-card">
+                    <div class="card-header-flex">
+                        <div class="card-heading">Live Agent Operations Feed</div>
+                        <span style="font-size: 12px; color: var(--teal-primary); font-weight: 600; cursor: pointer;" onclick="switchScreen('agent-activity')">View Timeline &rarr;</span>
+                    </div>
+                    <div class="activity-feed" id="live-feed-list">
+                        <div class="feed-row">
+                            <div class="feed-info">
+                                <span class="channel-chip chip-wa">WhatsApp</span>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 13.5px; color: var(--navy-deep);">Prescription Photo Ingestion & Vision OCR</div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Alex Rivera &bull; Bedrock Claude 3.5 Sonnet parsed Amoxicillin 500mg</div>
                                 </div>
                             </div>
-                        `;
-                    } else {
-                        rcsScreen.innerHTML += `<div class="msg msg-in">${m.content}</div>`;
-                    }
-                }
-            });
+                            <span style="font-size: 11.5px; font-weight: 600; color: #10B981; background: #DCFCE7; padding: 4px 8px; border-radius: 6px;">Parsed</span>
+                        </div>
+                        <div class="feed-row">
+                            <div class="feed-info">
+                                <span class="channel-chip chip-rcs">RCS</span>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 13.5px; color: var(--navy-deep);">One-Tap Pharmacy Slot Selection</div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Patient tapped 'CVS Health 2:30 PM' rich card chip</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 11.5px; font-weight: 600; color: #0284C7; background: #E0F2FE; padding: 4px 8px; border-radius: 6px;">Slot Locked</span>
+                        </div>
+                        <div class="feed-row">
+                            <div class="feed-info">
+                                <span class="channel-chip chip-ses">Amazon SES</span>
+                                <div>
+                                    <div style="font-weight: 600; font-size: 13.5px; color: var(--navy-deep);">Clinical Discharge Packet Dispatched</div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">Dosage schedule & check-in barcode token delivered to alex@example.com</div>
+                                </div>
+                            </div>
+                            <span style="font-size: 11.5px; font-weight: 600; color: #10B981; background: #DCFCE7; padding: 4px 8px; border-radius: 6px;">Delivered</span>
+                        </div>
+                    </div>
+                </div>
 
-            // Update Email
-            if (data.active_case.stage === "CONFIRMED_AND_DISCHARGED") {
-                emailScreen.innerHTML = `
-                    <div class="email-panel">
-                        <div style="border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
-                            <div style="font-weight: 700; color: #0284c7; font-size: 14px;">OmniCare Prescription & Clinical Care Instructions</div>
-                            <div style="font-size: 11px; color: #64748b;">From: care@omnicare.aws &bull; To: ${data.email}</div>
+                <div class="white-card">
+                    <div class="card-heading" style="margin-bottom: 14px;">Messages by AWS CDS Channel</div>
+                    <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">AWS EUM Social (WhatsApp)</span>
+                                <span style="font-weight: 700;">142 (57%)</span>
+                            </div>
+                            <div style="height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div style="width: 57%; height: 100%; background: #25D366;"></div>
+                            </div>
                         </div>
-                        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px; border-radius: 6px; margin-bottom: 10px;">
-                            <strong style="color: #166534;">Reservation Confirmed:</strong> ${data.active_case.preferred_pharmacy.name}<br>
-                            <span style="font-size: 11px; color: #15803d;">Check-in Code: <code>${data.active_case.qr_token}</code></span>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">AWS EUM (RCS / SMS)</span>
+                                <span style="font-weight: 700;">74 (30%)</span>
+                            </div>
+                            <div style="height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div style="width: 30%; height: 100%; background: #1A73E8;"></div>
+                            </div>
                         </div>
-                        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-                            <tr style="background: #f1f5f9;">
-                                <th style="padding: 4px; text-align: left;">Medication</th>
-                                <th style="padding: 4px; text-align: left;">Dosage</th>
-                                <th style="padding: 4px; text-align: left;">Frequency</th>
-                            </tr>
-                            ${data.active_case.medications.map(m => `
-                                <tr style="border-bottom: 1px solid #f1f5f9;">
-                                    <td style="padding: 4px; font-weight: 600;">${m.medication}</td>
-                                    <td style="padding: 4px;">${m.dosage}</td>
-                                    <td style="padding: 4px; color: #2563eb;">${m.frequency}</td>
-                                </tr>
-                            `).join('')}
-                        </table>
+                        <div>
+                            <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                                <span style="font-weight: 600;">Amazon SES (Email)</span>
+                                <span style="font-weight: 700;">32 (13%)</span>
+                            </div>
+                            <div style="height: 6px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                                <div style="width: 13%; height: 100%; background: #F59E0B;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; padding: 14px; background: #F8FAFC; border: 1px solid var(--border-light); border-radius: 8px;">
+                        <div style="font-size: 12px; font-weight: 700; color: var(--navy-deep);">Marketplace Readiness Metric</div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Zero cross-channel context loss across 100% of tested patient handoffs.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: Unified Inbox -->
+        <section class="screen-view" id="view-unified-inbox">
+            <div class="inbox-layout">
+                <div class="inbox-sidebar">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border-light); font-weight: 700; font-size: 14px; color: var(--navy-deep);">
+                        All Channels (4 Conversations)
+                    </div>
+                    <div class="inbox-thread-list">
+                        <div class="thread-item active">
+                            <div class="thread-header">
+                                <span class="thread-name">Alex Rivera</span>
+                                <span style="font-size: 11px; color: var(--text-subtle);">Just now</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--navy-deep); font-weight: 600; margin-bottom: 2px;">Acute Bronchitis & Rx Refill</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                Multi-channel handoff: WhatsApp &rarr; RCS &rarr; SES
+                            </div>
+                            <div style="display: flex; gap: 4px; margin-top: 8px;">
+                                <span class="channel-chip chip-wa">WA</span>
+                                <span class="channel-chip chip-rcs">RCS</span>
+                                <span class="channel-chip chip-ses">SES</span>
+                            </div>
+                        </div>
+                        <div class="thread-item">
+                            <div class="thread-header">
+                                <span class="thread-name">Elena Rostova</span>
+                                <span style="font-size: 11px; color: var(--text-subtle);">14m ago</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--navy-deep); font-weight: 600; margin-bottom: 2px;">Insulin Titration Verification</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">SES titration chart confirmed.</div>
+                        </div>
+                        <div class="thread-item">
+                            <div class="thread-header">
+                                <span class="thread-name">Marcus Vance</span>
+                                <span style="font-size: 11px; color: var(--text-subtle);">42m ago</span>
+                            </div>
+                            <div style="font-size: 12px; color: #D97706; font-weight: 600; margin-bottom: 2px;">Biologic Prior-Auth Review</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">Awaiting human clinical approval.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conversation-pane">
+                    <div class="conv-topbar">
+                        <div>
+                            <div style="font-size: 15px; font-weight: 700; color: var(--navy-deep);">Alex Rivera</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">+1 415-555-2671 &bull; alex.rivera.health@example.com</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 11px; background: #DCFCE7; color: #15803D; font-weight: 700; padding: 4px 10px; border-radius: 9999px;">
+                                Unified Session: Single-Table DynamoDB
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="conv-stream" id="unified-thread-stream">
+                        <!-- Message 1 (WhatsApp) -->
+                        <div style="align-self: flex-start; max-width: 75%;">
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px; display: flex; align-items: center; gap: 4px;">
+                                <span class="channel-chip chip-wa">WhatsApp</span> Patient
+                            </div>
+                            <div style="background: white; border: 1px solid var(--border-light); padding: 12px 16px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-dark);">
+                                📷 <strong>Uploaded Rx_Amoxicillin_500mg.jpg</strong><br>
+                                Hi OmniCare, can you help me refill this prescription for my bronchitis?
+                            </div>
+                        </div>
+
+                        <!-- Message 2 (WhatsApp Agent Reply) -->
+                        <div style="align-self: flex-end; max-width: 75%;">
+                            <div style="font-size: 11px; color: var(--teal-primary); font-weight: 600; margin-bottom: 3px; text-align: right;">
+                                OmniCare AI Agent &bull; WhatsApp
+                            </div>
+                            <div style="background: #F0FDFA; border: 1px solid #CCFBF1; padding: 12px 16px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; color: #0F766E;">
+                                ✅ Prescription verified via Bedrock Vision. Amoxicillin 500mg (14 caps). I have dispatched an interactive pickup card directly to your mobile RCS messages so you can pick a pharmacy slot with one tap!
+                            </div>
+                        </div>
+
+                        <!-- Handoff Banner -->
+                        <div class="channel-handoff-banner">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            Channel Handoff: Seamless Context Transition from WhatsApp &rarr; RCS
+                        </div>
+
+                        <!-- Message 3 (RCS Interaction) -->
+                        <div style="align-self: flex-end; max-width: 75%;">
+                            <div style="font-size: 11px; color: #0284C7; font-weight: 600; margin-bottom: 3px; text-align: right;">
+                                AWS End User Messaging (RCS Card)
+                            </div>
+                            <div style="background: white; border: 1px solid #BAE6FD; padding: 12px 16px; border-radius: 12px; font-size: 13.5px;">
+                                📍 <strong>Nearest Pharmacy Pickup Ready</strong><br>
+                                Patient selected: <strong>CVS Health (0.4 mi) - 2:30 PM</strong> via one-tap action chip.
+                            </div>
+                        </div>
+
+                        <!-- Handoff Banner 2 -->
+                        <div class="channel-handoff-banner">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            Channel Handoff: Triggering Amazon SES Clinical Discharge Packet
+                        </div>
+
+                        <!-- Message 4 (Amazon SES) -->
+                        <div style="align-self: flex-end; max-width: 75%;">
+                            <div style="font-size: 11px; color: #B45309; font-weight: 600; margin-bottom: 3px; text-align: right;">
+                                Amazon SES (Verified Email)
+                            </div>
+                            <div style="background: #FEF3C7; border: 1px solid #FDE68A; padding: 12px 16px; border-radius: 12px; font-size: 13.5px; color: #92400E;">
+                                ✉️ <strong>Clinical Discharge Instructions Delivered</strong><br>
+                                Full titration table, pharmacy check-in code <code>RX-PASS-SF-88392</code>, and warnings dispatched to alex.rivera.health@example.com.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: Agent Activity (Live Execution Timeline) -->
+        <section class="screen-view" id="view-agent-activity">
+            <div class="timeline-card">
+                <div class="card-header-flex">
+                    <div>
+                        <div class="card-heading">Amazon Bedrock AgentCore &bull; Execution & Tool Telemetry</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+                            Autonomous decision loop running with Anthropic Claude 3.5 Sonnet on AWS
+                        </div>
+                    </div>
+                    <span style="font-size: 12px; background: #DCFCE7; color: #15803D; padding: 4px 10px; border-radius: 6px; font-weight: 700;">
+                        Workflow Completed (3 CDS Calls)
+                    </span>
+                </div>
+
+                <div class="agent-timeline" style="margin-top: 20px;">
+                    <!-- Step 1 -->
+                    <div class="timeline-step">
+                        <div class="step-circle done">&#10003;</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--navy-deep);">1. Intent Understanding & Multimodal Vision Analysis</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+                            Ingested inbound WhatsApp payload. Invoked Bedrock Multimodal Vision OCR tool.
+                        </div>
+                        <div class="tool-call-box">
+                            // Tool: extractPrescriptionDetails(image_uri="s3://omnicare-rx/rx_alex.jpg")<br>
+                            // Extracted: { "drug": "Amoxicillin", "dosage": "500mg", "qty": 14, "condition": "Acute Bronchitis" }<br>
+                            // Confidence: 0.994
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="timeline-step">
+                        <div class="step-circle done">&#10003;</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--navy-deep);">2. Medical Guardrail Safety Verification</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+                            Bedrock Guardrails evaluated drug interactions against patient health history.
+                        </div>
+                        <div class="tool-call-box" style="color: #6EE7B7;">
+                            // Guardrail Policy: ClinicalSafety_v3<br>
+                            // Interaction Check: Amoxicillin + Albuterol -> SAFE<br>
+                            // Red Flag Emergency Check: NEGATIVE -> Proceed with autonomous triage.
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="timeline-step">
+                        <div class="step-circle done">&#10003;</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--navy-deep);">3. Channel Handoff & RCS Card Dispatch</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+                            Agent decided WhatsApp text listing was inefficient. Dispatched interactive RCS card via AWS EUM.
+                        </div>
+                        <div class="tool-call-box">
+                            // Tool: sendRCSCard(recipient="+14155552671", title="Pickup Ready", chips=["CVS 2:30 PM", "Walgreens 3:00 PM"])<br>
+                            // AWS CDS Response: { "status": "DELIVERED", "carrier": "T-Mobile", "channel": "RCS" }
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="timeline-step">
+                        <div class="step-circle done">&#10003;</div>
+                        <div style="font-weight: 700; font-size: 14px; color: var(--navy-deep);">4. Confirmation & Amazon SES Clinical Packet Delivery</div>
+                        <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+                            Locked reservation in pharmacy inventory. Generated QR barcode and sent Amazon SES summary email.
+                        </div>
+                        <div class="tool-call-box">
+                            // Tool: sendClinicalSESEmail(recipient="alex.rivera.health@example.com", qr_pass="RX-PASS-SF-88392")<br>
+                            // AWS SES API: 200 OK &bull; MessageId: 010001928374-abcd-ses &bull; TLS/DKIM Verified
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: Customer Experience (Interactive Mobile Phone) -->
+        <section class="screen-view" id="view-customer-experience">
+            <div class="cx-layout">
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: var(--navy-deep); margin-bottom: 6px;">
+                        Zero-Friction Mobile Customer Touchpoint
+                    </h3>
+                    <p style="font-size: 13.5px; color: var(--text-muted); max-width: 380px; line-height: 1.5;">
+                        Patients never have to download a portal or open an external website. The entire intake, slot reservation, and confirmation happens seamlessly inside their native messaging apps.
+                    </p>
+
+                    <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 10px;">
+                        <button onclick="mobileTriggerUpload()" style="background: white; border: 1px solid var(--border-light); padding: 12px 16px; border-radius: 8px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13px;">
+                            <span style="font-size: 18px;">📷</span> Step 1: Patient uploads Rx on WhatsApp
+                        </button>
+                        <button onclick="mobileTriggerRcsTap()" style="background: white; border: 1px solid var(--border-light); padding: 12px 16px; border-radius: 8px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13px;">
+                            <span style="font-size: 18px;">📍</span> Step 2: Patient taps pickup chip in RCS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive Smartphone Frame -->
+                <div class="mobile-device-frame">
+                    <div class="device-screen-inner">
+                        <div class="phone-top-bar">
+                            <span>9:41</span>
+                            <div class="phone-dynamic-island"></div>
+                            <span>5G</span>
+                        </div>
+
+                        <div class="mobile-app-header">
+                            <div style="width: 32px; height: 32px; background: #00A884; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">OC</div>
+                            <div>
+                                <div style="font-weight: 700; font-size: 13px;">OmniCare Concierge</div>
+                                <div style="font-size: 10.5px; color: #8696A0;">AWS Verified Channel</div>
+                            </div>
+                        </div>
+
+                        <div class="mobile-chat-body" id="cx-chat-screen">
+                            <div class="bubble bubble-in">
+                                Welcome to OmniCare HealthSync. Tap below to send your prescription photo or voice note.
+                            </div>
+                        </div>
+
+                        <div class="mobile-input-bar">
+                            <input type="text" id="cx-user-input" placeholder="Type a message...">
+                            <button onclick="mobileSendText()" style="background: #14B8A6; border: none; width: 32px; height: 32px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function switchScreen(screenKey) {
+            // Update Navigation Menu
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // Update Views
+            document.querySelectorAll('.screen-view').forEach(view => view.classList.remove('active'));
+
+            const titleMap = {
+                'command-center': 'Command Center / Overview & Operations',
+                'unified-inbox': 'Unified Inbox / Omnichannel Continuum',
+                'agent-activity': 'Agent Activity / Bedrock Execution Telemetry',
+                'customer-experience': 'Customer Experience / Native Mobile Journey'
+            };
+
+            document.getElementById(`view-${screenKey}`).classList.add('active');
+            document.getElementById('screen-title').innerHTML = `
+                <span>${titleMap[screenKey].split('/')[0]}</span>
+                <span style="color: var(--text-subtle); font-weight: 400;">/</span>
+                <span style="font-weight: 500; font-size: 13px; color: var(--text-muted);">${titleMap[screenKey].split('/')[1]}</span>
+            `;
+
+            // Highlight corresponding sidebar item
+            const idx = ['command-center', 'unified-inbox', 'agent-activity', 'customer-experience'].indexOf(screenKey);
+            if (idx >= 0) {
+                document.querySelectorAll('.nav-item')[idx].classList.add('active');
+            }
+        }
+
+        async function triggerFullLiveDemo() {
+            switchScreen('customer-experience');
+            mobileTriggerUpload();
+            setTimeout(() => {
+                mobileTriggerRcsTap();
+            }, 2600);
+        }
+
+        function mobileTriggerUpload() {
+            const screen = document.getElementById('cx-chat-screen');
+            screen.innerHTML += `
+                <div class="bubble bubble-out">
+                    📷 <em>Rx_Amoxicillin_500mg.jpg attached</em><br>
+                    Please refill this for my bronchitis.
+                </div>
+            `;
+            screen.scrollTop = screen.scrollHeight;
+
+            setTimeout(() => {
+                screen.innerHTML += `
+                    <div class="bubble bubble-in">
+                        ✅ Verified! Amoxicillin 500mg parsed. Here is your nearest pharmacy with instant inventory:
+                    </div>
+                    <div class="rcs-rich-card-mobile">
+                        <img src="https://images.unsplash.com/photo-1586015555751-63bb77f4322a?auto=format&fit=crop&w=500&q=80" style="width: 100%; height: 110px; object-fit: cover;">
+                        <div style="padding: 10px;">
+                            <div style="font-weight: 700; font-size: 13px; color: #0284C7;">CVS Pharmacy (0.4 mi away)</div>
+                            <div style="font-size: 11.5px; color: #64748B; margin-top: 2px;">Ready today at 2:30 PM</div>
+                            <button onclick="mobileTriggerRcsTap()" style="margin-top: 8px; width: 100%; background: #0284C7; color: white; border: none; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                                Tap to Reserve 2:30 PM Slot
+                            </button>
+                        </div>
                     </div>
                 `;
-            }
-
-            waScreen.scrollTop = waScreen.scrollHeight;
-            rcsScreen.scrollTop = rcsScreen.scrollHeight;
+                screen.scrollTop = screen.scrollHeight;
+            }, 1000);
         }
 
-        async function simulateWhatsAppPhoto() {
-            logTrace("MetaWhatsApp_Media", "Patient clicked 'Attach Image' on WhatsApp. Uploading Rx_Amoxicillin_500mg.jpg...");
-            const waScreen = document.getElementById("wa-screen");
-            waScreen.innerHTML += `
-                <div class="msg msg-wa-out">
-                    📷 <em>Image attached: Rx_Amoxicillin_500mg.jpg</em><br>
-                    Please refill this prescription for my bronchitis.
+        function mobileTriggerRcsTap() {
+            const screen = document.getElementById('cx-chat-screen');
+            screen.innerHTML += `
+                <div class="bubble bubble-out">
+                    Tapped: "Reserve 2:30 PM Slot"
                 </div>
             `;
-            waScreen.scrollTop = waScreen.scrollHeight;
-            const res = await triggerBackend("whatsapp", "Uploaded Rx_Amoxicillin_500mg.jpg", { is_image: true });
-            handleResponse(res);
-        }
-
-        async function simulateWhatsAppVoice() {
-            logTrace("MetaWhatsApp_Audio", "Patient recorded 12-second WhatsApp voice note (audio/ogg). Uploading to AWS EUM Social...");
-            const waScreen = document.getElementById("wa-screen");
-            waScreen.innerHTML += `
-                <div class="msg msg-wa-out" style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">▶️</span>
-                    <div>
-                        <div style="font-weight: 600; font-size: 12px;">Voice Note (0:12)</div>
-                        <div style="font-size: 11px; opacity: 0.8;">"Persistent cough and wheezing..."</div>
+            setTimeout(() => {
+                screen.innerHTML += `
+                    <div class="bubble bubble-in" style="border-left: 3px solid #10B981;">
+                        🎉 <strong>Pickup Confirmed!</strong><br>
+                        Your medication is reserved at CVS. We've sent your clinical dosage schedule & barcode pass to your email via Amazon SES.
                     </div>
-                </div>
-            `;
-            waScreen.scrollTop = waScreen.scrollHeight;
-            const res = await triggerBackend("whatsapp", "Audio note: Persistent cough and wheezing", { is_voice: true });
-            handleResponse(res);
+                `;
+                screen.scrollTop = screen.scrollHeight;
+            }, 800);
         }
 
-        async function runWinningScenario() {
-            logTrace("SimulationStarted", "Triggering inbound prescription intake on WhatsApp (AWS EUM Social)...");
-            await simulateWhatsAppPhoto();
+        function mobileSendText() {
+            const input = document.getElementById('cx-user-input');
+            const val = input.value.trim();
+            if (!val) return;
+            input.value = '';
 
-            // 2. Wait 2.5 seconds, then simulate patient tapping RCS chip
-            setTimeout(async () => {
-                logTrace("UserInteraction", "Patient received rich RCS card and tapped 'CVS Health (0.4 mi) - 2:30 PM'...");
-                const step2 = await triggerBackend("rcs", "CVS Health (0.4 mi) - 2:30 PM", null);
-                handleResponse(step2);
-            }, 2500);
+            const screen = document.getElementById('cx-chat-screen');
+            screen.innerHTML += `<div class="bubble bubble-out">${val}</div>`;
+            screen.scrollTop = screen.scrollHeight;
         }
     </script>
 </body>
 </html>
 """
 
-class OmnichannelHandler(BaseHTTPRequestHandler):
+class DashboardHTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         url_parsed = urllib.parse.urlparse(self.path)
         if url_parsed.path == "/" or url_parsed.path == "/index.html":
+            encoded_html = HTML_SAAS_DASHBOARD.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(encoded_html)))
             self.end_headers()
-            self.wfile.write(HTML_COCKPIT.encode("utf-8"))
+            self.wfile.write(encoded_html)
         elif url_parsed.path == "/api/state":
+            payload = json.dumps(session_store.get_full_state("patient_alex_rivera")).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
-            state = session_store.get_full_state("patient_alex_rivera")
-            self.wfile.write(json.dumps(state).encode("utf-8"))
-        elif url_parsed.path == "/api/audit":
+            self.wfile.write(payload)
+        elif url_parsed.path == "/api/inbox":
+            payload = json.dumps(INBOX_CONVERSATIONS).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
             self.end_headers()
-            self.wfile.write(json.dumps(cds_service.dispatch_audit_trail).encode("utf-8"))
+            self.wfile.write(payload)
         else:
             self.send_response(404)
             self.end_headers()
@@ -835,9 +1226,7 @@ class OmnichannelHandler(BaseHTTPRequestHandler):
                 sender = data.get("sender", "+14155552671")
                 text = data.get("text", "")
                 media = data.get("media")
-                
                 result = orchestrator.handle_inbound_event(channel, sender, text, media)
-                
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
@@ -852,8 +1241,8 @@ class OmnichannelHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 def run_server(port: int = 8080):
-    server = HTTPServer(("0.0.0.0", port), OmnichannelHandler)
-    print(f"OmniCare HealthSync Server listening on http://localhost:{port}")
+    server = HTTPServer(("0.0.0.0", port), DashboardHTTPHandler)
+    print(f"OmniCare RelayOps Dashboard listening on http://localhost:{port}")
     server.serve_forever()
 
 if __name__ == "__main__":
