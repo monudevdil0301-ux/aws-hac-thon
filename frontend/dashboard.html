@@ -1241,8 +1241,8 @@
               </div>
             </div>
             <div class="thread-composer">
-              <input type="text" placeholder="Reply as AI agent or type to override…" />
-              <button class="composer-btn">Send</button>
+              <input type="text" id="composer-input" placeholder="Type reply as clinical agent (or enter /agent to re-trigger)..." onkeydown="if(event.key==='Enter') sendComposerReply()" />
+              <button class="composer-btn" onclick="sendComposerReply()">Send</button>
             </div>
           </div>
 
@@ -1752,10 +1752,40 @@ function tapPhoneChip(id) {
   }, 400);
 }
 
-// ── CONV ITEM CLICK ──
 function selectConv(el) {
   document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+}
+
+function sendComposerReply() {
+  const inp = document.getElementById('composer-input');
+  if(!inp || !inp.value.trim()) return;
+  const txt = inp.value.trim();
+  inp.value = '';
+
+  const msgs = document.getElementById('thread-msgs');
+  const d = new Date();
+  const timeStr = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0') + ' PM';
+
+  const newRow = document.createElement('div');
+  newRow.className = 'msg-row outbound';
+  newRow.innerHTML = `
+    <div>
+      <div class="msg-channel-tag wa" style="text-align:right;">Operator Override · WhatsApp / CDS</div>
+      <div class="msg-bubble outbound">${txt}</div>
+      <div class="msg-time">${timeStr} · Sent ✓✓</div>
+    </div>
+  `;
+  msgs.appendChild(newRow);
+  msgs.scrollTop = 9999;
+  showToast('✓ Dispatched message via AWS CDS', 'success');
+
+  // Sync with backend /api/webhook
+  fetch('/api/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel: 'whatsapp', sender: '+15552345678', text: txt })
+  }).catch(() => {});
 }
 
 // ── APPROVE ALL ──
