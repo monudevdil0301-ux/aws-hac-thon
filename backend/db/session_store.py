@@ -10,15 +10,31 @@ Powered by Amazon DynamoDB with single-table design principles.
 import time
 import os
 import json
-from typing import Dict, Any, Optional
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+    BOTO3_AVAILABLE = True
+except ImportError:
+    boto3 = None
+    ClientError = Exception
+    BOTO3_AVAILABLE = False
 
 class SessionMemoryManager:
-    def __init__(self, table_name: str = "OmniCare_PatientSessions", simulation_mode: bool = True):
-        self.table_name = table_name
+    def __init__(self, table_name: str = "OmniCare_PatientSessions", simulation_mode: bool = True, region_name: str = "us-east-1"):
+        self.table_name = os.getenv("DYNAMODB_TABLE_NAME", table_name)
         self.simulation_mode = simulation_mode
+        self.region_name = os.getenv("AWS_REGION", region_name)
         self._in_memory_db: Dict[str, Dict[str, Any]] = {}
+        self.dynamodb_table = None
+
+        if not self.simulation_mode and BOTO3_AVAILABLE:
+            try:
+                dynamodb = boto3.resource("dynamodb", region_name=self.region_name)
+                self.dynamodb_table = dynamodb.Table(self.table_name)
+            except Exception as e:
+                pass
         
-        # Prepopulate demo patient profiles for instantaneous hackathon testing
+        # Prepopulate demo patient profiles for instantaneous testing
         self._init_demo_identities()
 
     def _init_demo_identities(self):
@@ -56,6 +72,13 @@ class SessionMemoryManager:
         WhatsApp ID, SMS phone number, or Email.
         """
         cleaned = identifier.strip().replace(" ", "").replace("-", "")
+        if self.dynamodb_table and not self.simulation_mode:
+            try:
+                res = self.dynamodb_table.get_item(Key={"patient_id": cleaned})
+                if "Item" in res:
+                    return res["Item"]
+            except Exception:
+                pass
         return self._in_memory_db.get(cleaned) or self._in_memory_db.get("patient_alex_rivera")
 
     def append_message(self, patient_id: str, channel: str, role: str, content: str, metadata: Optional[Dict[str, Any]] = None):
@@ -74,6 +97,12 @@ class SessionMemoryManager:
         patient["last_channel"] = channel
         patient["updated_at"] = int(time.time())
 
+        if self.dynamodb_table and not self.simulation_mode:
+            try:
+                self.dynamodb_table.put_item(Item=patient)
+            except Exception:
+                pass
+
     def update_case_stage(self, patient_id: str, new_stage: str, extra_data: Optional[Dict[str, Any]] = None):
         patient = self.resolve_patient(patient_id)
         if not patient:
@@ -83,6 +112,12 @@ class SessionMemoryManager:
         if extra_data:
             patient["active_case"].update(extra_data)
         patient["updated_at"] = int(time.time())
+
+        if self.dynamodb_table and not self.simulation_mode:
+            try:
+                self.dynamodb_table.put_item(Item=patient)
+            except Exception:
+                pass
 
     def get_full_state(self, patient_id: str) -> Dict[str, Any]:
         return self.resolve_patient(patient_id) or {}

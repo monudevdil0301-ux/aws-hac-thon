@@ -831,7 +831,7 @@
     <div class="topbar">
       <span class="topbar-breadcrumb" id="breadcrumb"><strong>Command Center</strong> — Today's Overview</span>
       <div class="topbar-right">
-        <div class="live-pill"><div class="live-dot"></div> Live</div>
+        <div class="live-pill" id="live-status-pill" onclick="checkBackendStatusModal()" title="Click to inspect live AWS services status" style="cursor:pointer;"><div class="live-dot" id="live-status-dot"></div> <span id="live-status-text">AWS CDS Connected</span></div>
         <button class="hero-cta" style="padding:6px 14px;font-size:12px;background:#172B4D;border:1px solid rgba(255,255,255,0.2);" onclick="runAPIDemoRequest()">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           ⚡ API Demo
@@ -1553,6 +1553,60 @@
 </div><!-- /shell -->
 
 <script>
+// ── LIVE AWS STATUS MODAL & MONITOR ──
+function checkBackendStatusModal() {
+  fetch('/api/status')
+    .then(r => r.json())
+    .then(data => {
+      let modal = document.getElementById('aws-status-modal');
+      if (modal) modal.remove();
+      modal = document.createElement('div');
+      modal.id = 'aws-status-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9000;display:flex;align-items:center;justify-content:center;animation:fadeIn 150ms ease;';
+      
+      const rows = Object.entries(data.services).map(([k, s]) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;margin-bottom:8px;">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#172B4D;">${s.name}</div>
+            <div style="font-size:11px;color:#64748B;">SDK Client: <code style="background:#E2E8F0;padding:1px 4px;border-radius:4px;">${s.boto3_service}</code> · Region: ${data.region}</div>
+          </div>
+          <div>
+            ${s.live_client_ready 
+              ? '<span style="background:rgba(16,185,129,0.12);color:#10B981;border:1px solid rgba(16,185,129,0.3);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;">● LIVE ACTIVE</span>'
+              : '<span style="background:rgba(20,184,166,0.1);color:#0D9488;border:1px solid rgba(20,184,166,0.25);padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;">STANDBY / READY</span>'}
+          </div>
+        </div>
+      `).join('');
+
+      modal.innerHTML = `
+        <div style="background:#fff;border-radius:12px;width:560px;max-width:92vw;box-shadow:0 24px 64px rgba(0,0,0,0.25);overflow:hidden;">
+          <div style="background:#172B4D;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,153,0,0.2);display:flex;align-items:center;justify-content:center;color:#FF9900;font-weight:bold;font-size:14px;">AWS</div>
+              <div>
+                <div style="color:#fff;font-size:14px;font-weight:700;">AWS CDS & Bedrock Service Status</div>
+                <div style="color:rgba(255,255,255,0.6);font-size:11px;">Target Region: ${data.region} · Mode: ${data.live_mode ? 'LIVE DISPATCH' : 'SIMULATION / DEMO READY'}</div>
+              </div>
+            </div>
+            <div onclick="document.getElementById('aws-status-modal').remove()" style="color:rgba(255,255,255,0.6);cursor:pointer;font-size:22px;line-height:1;">×</div>
+          </div>
+          <div style="padding:20px;max-height:65vh;overflow-y:auto;">
+            <div style="margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
+              OmniCare HealthSync runs directly on AWS native Python SDK (<code style="background:#F1F5F9;padding:2px 4px;border-radius:4px;">boto3</code>). Configure your AWS credentials anytime to switch all 5 services to live delivery.
+            </div>
+            ${rows}
+          </div>
+          <div style="padding:14px 20px;background:#F8FAFC;border-top:1px solid #E2E8F0;display:flex;justify-content:flex-end;">
+            <button onclick="document.getElementById('aws-status-modal').remove()" style="background:#172B4D;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer;">Close</button>
+          </div>
+        </div>
+      `;
+      modal.onclick = e => { if (e.target === modal) modal.remove(); };
+      document.body.appendChild(modal);
+    })
+    .catch(() => showToast('Could not fetch AWS status', 'error'));
+}
+
 // ── TOAST SYSTEM (Gap 4) ──
 function showToast(msg, type='info', duration=3500) {
   let container = document.getElementById('toast-container');

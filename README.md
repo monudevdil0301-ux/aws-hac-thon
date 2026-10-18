@@ -149,15 +149,46 @@ python backend/server.py
 ```
 Open your browser to: **`http://localhost:8080`**
 
-### 3. Test the Hackathon Winning Flow
-In the web cockpit:
-1. Click **`▶️ Run 1st-Prize Demo Flow (WhatsApp ➔ RCS ➔ SES)`**.
-2. Watch the live **Bedrock AgentCore Telemetry** trace the reasoning steps:
-   - Ingest prescription on WhatsApp.
-   - Parse medication via Bedrock Vision.
-   - Handoff to RCS with an interactive pharmacy pick-up card.
-   - Patient taps the CVS slot chip on RCS.
-   - Locks slot and dispatches the Amazon SES clinical summary packet.
+### 3. Running in 100% Live AWS Cloud Mode
+OmniCare HealthSync uses the native AWS Python SDK (`boto3`) to communicate directly with AWS APIs. To run in live cloud dispatch mode:
+
+1. **Set your AWS credentials and region:**
+   ```powershell
+   # Windows PowerShell
+   $env:AWS_ACCESS_KEY_ID="your-access-key-id"
+   $env:AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+   $env:AWS_REGION="us-east-1"
+   $env:SIMULATION_MODE="false"
+   $env:SES_SENDER_EMAIL="verified-email@yourdomain.com"
+   $env:AWS_EUM_WHATSAPP_PHONE_ID="your-whatsapp-phone-id"
+   ```
+   ```bash
+   # macOS / Linux
+   export AWS_ACCESS_KEY_ID="your-access-key-id"
+   export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+   export AWS_REGION="us-east-1"
+   export SIMULATION_MODE="false"
+   export SES_SENDER_EMAIL="verified-email@yourdomain.com"
+   export AWS_EUM_WHATSAPP_PHONE_ID="your-whatsapp-phone-id"
+   ```
+
+2. **Launch the server:**
+   ```bash
+   py -3 backend/server.py   # Windows
+   python3 backend/server.py  # macOS / Linux
+   ```
+
+3. **Verify Connected Services:**
+   Click the **`AWS CDS Connected`** status pill in the top right of the dashboard, or call:
+   ```bash
+   curl http://localhost:8080/api/status
+   ```
+   This returns live client connectivity across:
+   - **AWS End User Messaging Social** (`socialmessaging`)
+   - **AWS End User Messaging RCS / SMS** (`pinpoint-sms-voice-v2`)
+   - **Amazon Simple Email Service** (`sesv2`)
+   - **Amazon Bedrock AgentCore & Runtime** (`bedrock-runtime`)
+   - **Amazon DynamoDB** (`dynamodb`)
 
 ---
 

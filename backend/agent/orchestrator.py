@@ -24,10 +24,53 @@ Your mission is to guide patients seamlessly across channels:
 Maintain conversational context across all touchpoints. Ensure medical guardrails and empathetic clinical tone.
 """
 
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+    BOTO3_AVAILABLE = True
+except ImportError:
+    boto3 = None
+    ClientError = Exception
+    BOTO3_AVAILABLE = False
+
 class BedrockAgentOrchestrator:
-    def __init__(self, session_store, cds_service):
+    def __init__(self, session_store, cds_service, region_name: str = "us-east-1"):
         self.session_store = session_store
         self.cds_service = cds_service
+        self.region_name = os.getenv("AWS_REGION", region_name)
+        self.bedrock_runtime = None
+        self.bedrock_agent_runtime = None
+
+        if BOTO3_AVAILABLE and not getattr(self.cds_service, "simulation_mode", True):
+            try:
+                self.bedrock_runtime = boto3.client("bedrock-runtime", region_name=self.region_name)
+                self.bedrock_agent_runtime = boto3.client("bedrock-agent-runtime", region_name=self.region_name)
+            except Exception as e:
+                logger.warning(f"Bedrock client initialization fallback: {e}")
+
+    def call_live_bedrock(self, prompt: str, system_prompt: str = SYSTEM_PROMPT) -> Optional[str]:
+        """Invokes Claude 3.5 Sonnet or Amazon Nova via Bedrock Runtime if credentials are live."""
+        if not self.bedrock_runtime:
+            return None
+        try:
+            model_id = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+            body = json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 500,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": prompt}]
+            })
+            resp = self.bedrock_runtime.invoke_model(
+                modelId=model_id,
+                body=body,
+                contentType="application/json",
+                accept="application/json"
+            )
+            resp_body = json.loads(resp["body"].read().decode("utf-8"))
+            return resp_body["content"][0]["text"]
+        except Exception as err:
+            logger.error(f"Live Bedrock invocation exception: {err}")
+            return None
 
     def handle_inbound_event(self, channel: str, sender_id: str, message_text: str, media_payload: Any = None) -> Dict[str, Any]:
         """

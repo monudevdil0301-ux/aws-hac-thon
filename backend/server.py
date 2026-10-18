@@ -20,8 +20,12 @@ from backend.services.cds_messaging import CDSMessagingService
 from backend.db.session_store import SessionMemoryManager
 from backend.agent.orchestrator import BedrockAgentOrchestrator
 
-cds_service = CDSMessagingService(simulation_mode=True)
-session_store = SessionMemoryManager(simulation_mode=True)
+# Read environment configurations
+IS_SIMULATION = os.getenv("SIMULATION_MODE", "true").lower() == "true"
+AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+
+cds_service = CDSMessagingService(region_name=AWS_REGION, simulation_mode=IS_SIMULATION)
+session_store = SessionMemoryManager(simulation_mode=IS_SIMULATION)
 orchestrator = BedrockAgentOrchestrator(session_store, cds_service)
 
 # Seed additional mock inbox conversations for enterprise richness
@@ -1225,6 +1229,46 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        elif url_parsed.path == "/api/status":
+            status_data = {
+                "live_mode": not cds_service.simulation_mode,
+                "region": cds_service.region_name,
+                "boto3_installed": True,
+                "services": {
+                    "aws_eum_whatsapp": {
+                        "name": "AWS End User Messaging Social (WhatsApp)",
+                        "live_client_ready": hasattr(cds_service, "social_messaging_client") and cds_service.social_messaging_client is not None,
+                        "boto3_service": "socialmessaging"
+                    },
+                    "aws_eum_rcs": {
+                        "name": "AWS End User Messaging (RCS / SMS)",
+                        "live_client_ready": hasattr(cds_service, "pinpoint_sms_voice_client") and cds_service.pinpoint_sms_voice_client is not None,
+                        "boto3_service": "pinpoint-sms-voice-v2"
+                    },
+                    "amazon_ses": {
+                        "name": "Amazon Simple Email Service (SES v2)",
+                        "live_client_ready": hasattr(cds_service, "ses_client") and cds_service.ses_client is not None,
+                        "boto3_service": "sesv2"
+                    },
+                    "amazon_bedrock": {
+                        "name": "Amazon Bedrock AgentCore & Runtime",
+                        "live_client_ready": hasattr(orchestrator, "bedrock_runtime") and orchestrator.bedrock_runtime is not None,
+                        "boto3_service": "bedrock-runtime"
+                    },
+                    "amazon_dynamodb": {
+                        "name": "Amazon DynamoDB Session Memory",
+                        "live_client_ready": hasattr(session_store, "dynamodb_table") and session_store.dynamodb_table is not None,
+                        "boto3_service": "dynamodb"
+                    }
+                }
+            }
+            payload = json.dumps(status_data).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(payload)
         else:

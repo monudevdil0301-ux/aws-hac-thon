@@ -99,7 +99,21 @@ class CDSMessagingService:
             }
         }
         
-        self._record_audit_event("whatsapp", to_phone_number, list_payload, "SUCCESS")
+        if not self.simulation_mode and hasattr(self, "social_messaging_client"):
+            try:
+                response = self.social_messaging_client.send_whatsapp_message(
+                    originationPhoneNumberId=os.getenv("AWS_EUM_WHATSAPP_PHONE_ID", "default-phone-id"),
+                    metaApiVersion="v20.0",
+                    message=json.dumps(list_payload).encode("utf-8")
+                )
+                self._record_audit_event("whatsapp", to_phone_number, list_payload, "SUCCESS")
+                return {"status": "SENT", "channel": "whatsapp", "type": "interactive_list", "message_id": response.get("messageId", "wa_live_list_id")}
+            except ClientError as e:
+                logger.error(f"AWS EUM Social WhatsApp interactive list dispatch error: {e}")
+                self._record_audit_event("whatsapp", to_phone_number, list_payload, f"ERROR: {str(e)}")
+                return {"status": "FAILED", "error": str(e)}
+
+        self._record_audit_event("whatsapp", to_phone_number, list_payload, "SIMULATED_SUCCESS")
         return {
             "status": "SENT",
             "channel": "whatsapp",
