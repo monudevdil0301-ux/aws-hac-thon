@@ -28,16 +28,16 @@ Traditional healthcare outreach relies on disjointed, rigid communication:
 
 ### Windows
 ```powershell
-git clone https://github.com/YOUR_USERNAME/omnicare-healthsync.git
-cd omnicare-healthsync
+git clone https://github.com/monudevdil0301-ux/aws-hac-thon.git
+cd aws-hac-thon
 py -3 backend/server.py
 # Open http://localhost:8080 in your browser
 ```
 
 ### macOS / Linux
 ```bash
-git clone https://github.com/YOUR_USERNAME/omnicare-healthsync.git
-cd omnicare-healthsync
+git clone https://github.com/monudevdil0301-ux/aws-hac-thon.git
+cd aws-hac-thon
 python3 backend/server.py
 # Open http://localhost:8080 in your browser
 ```
