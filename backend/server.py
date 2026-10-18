@@ -20,6 +20,16 @@ from backend.services.cds_messaging import CDSMessagingService
 from backend.db.session_store import SessionMemoryManager
 from backend.agent.orchestrator import BedrockAgentOrchestrator
 
+# Load .env file automatically if present
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(env_path):
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
 # Read environment configurations
 IS_SIMULATION = os.getenv("SIMULATION_MODE", "true").lower() == "true"
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
