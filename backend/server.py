@@ -1398,6 +1398,38 @@ class DashboardHTTPHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(payload)
 
+        # ── /api/send-email ── live SES dispatch test
+        elif url_parsed.path == "/api/send-email":
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8") if content_length else "{}"
+            data = json.loads(body) if body else {}
+            to_email = data.get("to_email", os.getenv("SES_SENDER_EMAIL", "care@omnicare.aws"))
+            subject = data.get("subject", "OmniCare HealthSync - Prescription Confirmation & Clinical Instructions")
+            patient_name = data.get("patient_name", "Alex Rivera")
+            
+            result = cds_service.send_clinical_email(
+                to_email=to_email,
+                subject=subject,
+                patient_name=patient_name,
+                medication_schedule=[
+                    {"medication": "Amoxicillin", "dosage": "500mg", "frequency": "3x daily for 7 days", "instructions": "Take with food & full glass of water"},
+                    {"medication": "Albuterol Inhaler", "dosage": "90mcg", "frequency": "1-2 puffs q4-6h", "instructions": "Use before physical activity"}
+                ],
+                pickup_location={
+                    "name": "CVS Pharmacy #4021 - Market St",
+                    "address": "701 Market St, San Francisco, CA 94103",
+                    "pickup_window": "Today, 2:30 PM - 6:00 PM"
+                },
+                qr_code_token="RX-PASS-SF-88392"
+            )
+            payload = json.dumps(result).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(payload)
+
         else:
             self.send_response(404)
             self.end_headers()

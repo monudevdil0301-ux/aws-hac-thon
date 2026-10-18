@@ -7,6 +7,7 @@ Handles native dispatching to:
 """
 
 import os
+import time
 import json
 import logging
 from typing import Dict, Any, List, Optional
@@ -59,7 +60,7 @@ class CDSMessagingService:
             "recipient": recipient,
             "payload": payload,
             "status": status,
-            "timestamp": boto3.client("sts").meta.region if not self.simulation_mode else "2026-10-16T18:15:00Z"
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         }
         self.dispatch_audit_trail.append(event)
         logger.info(f"[{channel.upper()}] Dispatched to {recipient} | Status: {status}")
