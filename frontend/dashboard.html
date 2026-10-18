@@ -176,6 +176,8 @@
     transition: all var(--transition);
   }
   .channel-item:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.85); }
+  .channel-item.active-channel { background: rgba(212,175,55,0.15); color: #D4AF37; animation: channelPulse 0.5s ease; }
+  @keyframes channelPulse { 0%{ transform:scale(1); } 50%{ transform:scale(1.03); } 100%{ transform:scale(1); } }
   .channel-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
   .sidebar-footer {
@@ -471,6 +473,7 @@
   .pill-active { background: rgba(20,184,166,0.12); color: var(--teal); }
   .pill-pending { background: rgba(245,158,11,0.1); color: var(--amber); }
   .pill-sent { background: rgba(59,130,246,0.1); color: var(--blue); }
+  .pill-escalated { background: rgba(239,68,68,0.1); color: var(--red); }
 
   /* Channel bar chart */
   .channel-stats { padding: 16px 20px; }
@@ -1038,20 +1041,20 @@
 
     <div class="sidebar-section-label">Channels</div>
     <div class="sidebar-channels">
-      <div class="channel-item">
+      <div class="channel-item" onclick="openChannelFilter('whatsapp')" title="Filter by WhatsApp">
         <span class="channel-dot" style="background:#25D366"></span>
         <!-- WhatsApp -->
         <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
         WhatsApp
         <span style="margin-left:auto;font-size:10px;color:var(--green);font-weight:600;">87</span>
       </div>
-      <div class="channel-item">
+      <div class="channel-item" onclick="openChannelFilter('rcs')" title="Filter by RCS / SMS">
         <span class="channel-dot" style="background:#14B8A6"></span>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#14B8A6" stroke-width="2"/><path d="M2 8l10 6 10-6" stroke="#14B8A6" stroke-width="2"/></svg>
         RCS / SMS
         <span style="margin-left:auto;font-size:10px;color:var(--teal);font-weight:600;">54</span>
       </div>
-      <div class="channel-item">
+      <div class="channel-item" onclick="openChannelFilter('ses')" title="Filter by Amazon SES Email">
         <span class="channel-dot" style="background:#3B82F6"></span>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#3B82F6" stroke-width="2"/><path d="M2 7l10 7 10-7" stroke="#3B82F6" stroke-width="2"/></svg>
         Amazon SES
@@ -1332,15 +1335,15 @@
             </div>
             <div class="inbox-cat-header" style="margin-top:8px;">Channels</div>
             <div class="inbox-categories">
-              <div class="inbox-cat-item">
+              <div class="inbox-cat-item" id="inbox-tab-whatsapp" onclick="filterInboxByChannel('whatsapp',this)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
                 WhatsApp <span class="inbox-cat-count">87</span>
               </div>
-              <div class="inbox-cat-item">
+              <div class="inbox-cat-item" id="inbox-tab-rcs" onclick="filterInboxByChannel('rcs',this)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#14B8A6" stroke-width="1.8"/></svg>
                 RCS / SMS <span class="inbox-cat-count">54</span>
               </div>
-              <div class="inbox-cat-item">
+              <div class="inbox-cat-item" id="inbox-tab-ses" onclick="filterInboxByChannel('ses',this)">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#3B82F6" stroke-width="1.8"/></svg>
                 Email <span class="inbox-cat-count">107</span>
               </div>
@@ -1354,7 +1357,7 @@
               <input type="text" placeholder="Search conversations…" />
             </div>
             <div class="conv-list">
-              <div class="conv-item active" onclick="selectConv(this)">
+              <div class="conv-item active" data-channel="whatsapp" data-patient="alex" onclick="selectConv(this,'alex')">
                 <div class="conv-avatar" style="background:#075E54">
                   AR
                   <div class="conv-avatar-channel">
@@ -1367,7 +1370,7 @@
                 </div>
                 <div class="conv-time">2m</div>
               </div>
-              <div class="conv-item" onclick="selectConv(this)">
+              <div class="conv-item" data-channel="rcs" data-patient="sarah" onclick="selectConv(this,'sarah')">
                 <div class="conv-avatar" style="background:#14B8A6">SC</div>
                 <div class="conv-info">
                   <div class="conv-name">Sarah Chen <span class="ai-badge">AI</span></div>
@@ -1375,7 +1378,7 @@
                 </div>
                 <div class="conv-time">5m</div>
               </div>
-              <div class="conv-item" onclick="selectConv(this)">
+              <div class="conv-item" data-channel="ses" data-patient="marcus" onclick="selectConv(this,'marcus')">
                 <div class="conv-avatar" style="background:#3B82F6">MK</div>
                 <div class="conv-info">
                   <div class="conv-name">Marcus Kim</div>
@@ -1383,7 +1386,7 @@
                 </div>
                 <div class="conv-time">8m</div>
               </div>
-              <div class="conv-item" onclick="openApprovalModal()">
+              <div class="conv-item" data-channel="whatsapp" data-patient="priya" onclick="openApprovalModal()">
                 <div class="conv-avatar" style="background:#8B5CF6">PJ</div>
                 <div class="conv-info">
                   <div class="conv-name">Priya Joshi <span class="ai-badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;border-color:rgba(245,158,11,0.3);">REVIEW</span></div>
@@ -1391,7 +1394,7 @@
                 </div>
                 <div class="conv-time">11m</div>
               </div>
-              <div class="conv-item" onclick="selectConv(this)">
+              <div class="conv-item" data-channel="whatsapp" data-patient="tom" onclick="selectConv(this,'tom')">
                 <div class="conv-avatar" style="background:#F59E0B">TW</div>
                 <div class="conv-info">
                   <div class="conv-name">Tom Wallace</div>
@@ -1399,7 +1402,7 @@
                 </div>
                 <div class="conv-time">14m</div>
               </div>
-              <div class="conv-item" onclick="selectConv(this)">
+              <div class="conv-item" data-channel="ses" data-patient="lisa" onclick="selectConv(this,'lisa')">
                 <div class="conv-avatar" style="background:#EF4444">LN</div>
                 <div class="conv-info">
                   <div class="conv-name">Lisa Nguyen</div>
@@ -2150,9 +2153,300 @@ function tapPhoneChip(id) {
   }, 400);
 }
 
-function selectConv(el) {
+// ── PATIENT DATA FOR DYNAMIC THREAD / PROFILE ──
+const PATIENTS = {
+  alex: {
+    initials: 'AR', avatarColor: '#075E54',
+    name: 'Alex Rivera', phone: '+1 (555) 234-5678', id: '#P-00124',
+    email: 'alex.r@email.com', dob: 'Mar 15, 1985 (39y)',
+    primaryCare: 'Dr. Sarah Chen, MD', insurance: 'BlueCross PPO',
+    status: '✓ Resolved', statusClass: 'pill-resolved',
+    channel: 'WhatsApp', channelTag: 'wa', channelColor: '#25D366',
+    channelIcon: `<svg width="10" height="10" viewBox="0 0 24 24" fill="#128C7E"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`,
+    rx: [
+      { name: 'Metformin 500mg', details: 'Twice daily · Dr. Chen · Refill #3', status: '✓ Refill confirmed today', statusColor: 'var(--green)' },
+      { name: 'Lisinopril 10mg', details: 'Once daily · Dr. Patel · Refill available Nov 5', status: '⏳ Due in 18 days', statusColor: 'var(--amber)' }
+    ],
+    history: ['📱 Oct 10 — Appointment rescheduled via RCS', '📧 Oct 5 — Lab results emailed via SES', '💬 Sep 28 — Billing query resolved on WhatsApp'],
+    messages: `
+      <div style="font-size:10px;color:var(--gray-text);text-align:center;margin:4px 0;">Oct 17, 6:44 PM</div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag wa"><svg width="10" height="10" viewBox="0 0 24 24" fill="#128C7E"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg> WhatsApp</div>
+        <div class="msg-bubble inbound">Hi, I need to refill my Metformin prescription. Can you help? 💊</div>
+        <div class="msg-time">6:44 PM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag wa" style="text-align:right;">WhatsApp · OmniCare AI</div>
+        <div class="msg-bubble outbound">Hi Alex! I found your prescription for Metformin 500mg. Your last refill was 28 days ago. Would you like me to find the nearest CVS Pharmacy with same-day pickup?</div>
+        <div class="msg-time">6:44 PM · Delivered ✓✓</div>
+      </div></div>
+      <div class="msg-row"><div>
+        <div class="msg-bubble inbound">Yes please! I'd like to pick it up today if possible.</div>
+        <div class="msg-time">6:45 PM</div>
+      </div></div>
+      <div class="handoff-divider"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="var(--teal)" stroke-width="2" stroke-linecap="round"/></svg> Switched to RCS for rich card</div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag rcs">RCS · Rich Card</div>
+        <div class="rcs-card">
+          <div class="rcs-card-header">📍 Pharmacy Pickup Options</div>
+          <div class="rcs-card-body">
+            <div style="margin-bottom:6px;"><strong>CVS Pharmacy</strong> — 0.4 mi<br><span style="color:var(--gray-text)">2847 Oak Street · Same-day available</span></div>
+            <div><strong>Walgreens</strong> — 0.9 mi<br><span style="color:var(--gray-text)">510 Elm Ave · Ready in 2 hrs</span></div>
+          </div>
+          <div class="rcs-chip-row">
+            <span class="rcs-chip" id="chip1" onclick="tapChip('chip1','CVS 2847 Oak St')">CVS Oak St</span>
+            <span class="rcs-chip" id="chip2" onclick="tapChip('chip2','Walgreens Elm Ave')">Walgreens</span>
+          </div>
+        </div>
+      </div></div>
+      <div class="handoff-divider" id="email-divider" style="display:none;"><svg width="12" height="12" fill="none" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#3B82F6" stroke-width="2"/><path d="M2 7l10 7 10-7" stroke="#3B82F6" stroke-width="2"/></svg> Email confirmation via Amazon SES</div>
+      <div class="msg-row outbound" id="confirm-msg" style="display:none;"><div>
+        <div class="msg-channel-tag email" style="text-align:right;">Amazon SES</div>
+        <div class="msg-bubble outbound">✅ Perfect! Your Metformin refill at <strong>CVS 2847 Oak St</strong> is confirmed. Pickup window: 30 minutes. A clinical summary has been sent to alex.r@email.com.</div>
+        <div class="msg-time" id="confirm-time">6:46 PM · Sent ✓✓</div>
+      </div></div>`
+  },
+  sarah: {
+    initials: 'SC', avatarColor: '#14B8A6',
+    name: 'Sarah Chen', phone: '+1 (555) 987-1234', id: '#P-00208',
+    email: 'sarah.chen@email.com', dob: 'Aug 22, 1990 (34y)',
+    primaryCare: 'Dr. James Patel, MD', insurance: 'Aetna HMO',
+    status: '⏳ Awaiting', statusClass: 'pill-pending',
+    channel: 'RCS / SMS', channelTag: 'rcs', channelColor: '#14B8A6',
+    channelIcon: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="#14B8A6" stroke-width="1.8"/><path d="M2 8l10 6 10-6" stroke="#14B8A6" stroke-width="1.8"/></svg>`,
+    rx: [
+      { name: 'Atorvastatin 20mg', details: 'Once nightly · Dr. Patel · Refill #1', status: '✓ Active', statusColor: 'var(--green)' },
+      { name: 'Escitalopram 10mg', details: 'Once daily · Dr. Osei · 3 refills remaining', status: '✓ Active', statusColor: 'var(--green)' }
+    ],
+    history: ['📱 Oct 14 — Delivery rescheduled via RCS', '💬 Oct 1 — Prescription inquiry on WhatsApp', '📧 Sep 18 — Insurance summary emailed via SES'],
+    messages: `
+      <div style="font-size:10px;color:var(--gray-text);text-align:center;margin:4px 0;">Oct 17, 9:12 AM</div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag rcs">RCS / SMS</div>
+        <div class="msg-bubble inbound">Hi, my medication delivery was supposed to arrive today but I haven't received it yet 😕</div>
+        <div class="msg-time">9:12 AM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag rcs" style="text-align:right;">RCS · OmniCare AI</div>
+        <div class="msg-bubble outbound">Hi Sarah! I've checked your order — the courier had a delay. I can reschedule delivery for Thursday 2–4 PM at no extra charge. Would that work?</div>
+        <div class="msg-time">9:13 AM · Delivered ✓✓</div>
+      </div></div>
+      <div class="msg-row"><div>
+        <div class="msg-bubble inbound">Yes, Thursday works perfectly. Thank you! 🙏</div>
+        <div class="msg-time">9:14 AM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag rcs" style="text-align:right;">RCS · OmniCare AI</div>
+        <div class="msg-bubble outbound">✅ Delivery rescheduled for <strong>Thu Oct 19, 2–4 PM</strong>. You'll receive a real-time tracking link 30 minutes before arrival.</div>
+        <div class="msg-time">9:14 AM · Delivered ✓✓</div>
+      </div></div>`
+  },
+  marcus: {
+    initials: 'MK', avatarColor: '#3B82F6',
+    name: 'Marcus Kim', phone: '+1 (555) 421-7890', id: '#P-00315',
+    email: 'marcus.k@email.com', dob: 'Jan 5, 1978 (46y)',
+    primaryCare: 'Dr. Linda Torres, MD', insurance: 'United PPO',
+    status: '✓ Resolved', statusClass: 'pill-resolved',
+    channel: 'Amazon SES', channelTag: 'email', channelColor: '#3B82F6',
+    channelIcon: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#3B82F6" stroke-width="1.8"/><path d="M2 7l10 7 10-7" stroke="#3B82F6" stroke-width="1.8"/></svg>`,
+    rx: [
+      { name: 'Metoprolol 50mg', details: 'Twice daily · Dr. Torres · Refill #4', status: '✓ Active', statusColor: 'var(--green)' }
+    ],
+    history: ['📧 Oct 17 — Lab results emailed via SES', '📱 Oct 8 — Appointment confirmed via RCS', '📧 Sep 22 — Quarterly summary via SES'],
+    messages: `
+      <div style="font-size:10px;color:var(--gray-text);text-align:center;margin:4px 0;">Oct 17, 2:30 PM</div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag email" style="text-align:right;">Amazon SES · OmniCare AI</div>
+        <div class="msg-bubble outbound">
+          <strong>📧 Lab Results — Marcus Kim (#P-00315)</strong><br><br>
+          Your recent panel results are in:<br>
+          · HbA1c: <strong>5.7%</strong> (Normal)<br>
+          · LDL Cholesterol: <strong>98 mg/dL</strong> (Good)<br>
+          · Blood Pressure: <strong>122/78 mmHg</strong> (Normal)<br><br>
+          Dr. Torres has reviewed these results. No medication changes needed. Next check-up: Jan 15, 2027.
+        </div>
+        <div class="msg-time">2:30 PM · Sent via AWS SES ✓✓</div>
+      </div></div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag email">Reply via Email</div>
+        <div class="msg-bubble inbound">Thank you! These look great compared to last quarter. Really appreciate the quick turnaround.</div>
+        <div class="msg-time">3:05 PM</div>
+      </div></div>`
+  },
+  tom: {
+    initials: 'TW', avatarColor: '#F59E0B',
+    name: 'Tom Wallace', phone: '+1 (555) 663-2210', id: '#P-00441',
+    email: 'tom.w@email.com', dob: 'Nov 30, 1965 (58y)',
+    primaryCare: 'Dr. Anita Rao, MD', insurance: 'Medicare Advantage',
+    status: '✓ Resolved', statusClass: 'pill-resolved',
+    channel: 'WhatsApp', channelTag: 'wa', channelColor: '#25D366',
+    channelIcon: `<svg width="10" height="10" viewBox="0 0 24 24" fill="#128C7E"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>`,
+    rx: [
+      { name: 'Amlodipine 5mg', details: 'Once daily · Dr. Rao · Refill #7', status: '✓ Active', statusColor: 'var(--green)' },
+      { name: 'Metformin 1000mg', details: 'Twice daily · Dr. Rao · Refill #2', status: '⏳ Due in 9 days', statusColor: 'var(--amber)' }
+    ],
+    history: ['💬 Oct 17 — Appointment booked via WhatsApp', '📧 Oct 2 — Insurance updated via SES', '📱 Sep 15 — Rx renewal via RCS'],
+    messages: `
+      <div style="font-size:10px;color:var(--gray-text);text-align:center;margin:4px 0;">Oct 17, 11:45 AM</div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag wa"><svg width="9" height="9" viewBox="0 0 24 24" fill="#128C7E"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg> WhatsApp</div>
+        <div class="msg-bubble inbound">I need to book a follow-up appointment with Dr. Rao. Preferably Monday morning?</div>
+        <div class="msg-time">11:45 AM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag wa" style="text-align:right;">WhatsApp · OmniCare AI</div>
+        <div class="msg-bubble outbound">Hi Tom! I've checked Dr. Rao's calendar. She has availability on <strong>Monday Oct 21 at 9:00 AM</strong>. Shall I confirm this slot?</div>
+        <div class="msg-time">11:45 AM · Delivered ✓✓</div>
+      </div></div>
+      <div class="msg-row"><div>
+        <div class="msg-bubble inbound">Yes, book it please! 👍</div>
+        <div class="msg-time">11:46 AM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag wa" style="text-align:right;">WhatsApp · OmniCare AI</div>
+        <div class="msg-bubble outbound">✅ <strong>Confirmed!</strong> Dr. Rao on Mon Oct 21 @ 9:00 AM. Suite 304, OmniCare Medical Center. A calendar invite has been sent to tom.w@email.com.</div>
+        <div class="msg-time">11:46 AM · Delivered ✓✓</div>
+      </div></div>`
+  },
+  lisa: {
+    initials: 'LN', avatarColor: '#EF4444',
+    name: 'Lisa Nguyen', phone: '+1 (555) 778-3344', id: '#P-00567',
+    email: 'lisa.n@email.com', dob: 'May 7, 1982 (42y)',
+    primaryCare: 'Dr. Mark Ellis, MD', insurance: 'Cigna HMO',
+    status: '🔴 Escalated', statusClass: 'pill-escalated',
+    channel: 'Amazon SES', channelTag: 'email', channelColor: '#3B82F6',
+    channelIcon: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="2" stroke="#3B82F6" stroke-width="1.8"/><path d="M2 7l10 7 10-7" stroke="#3B82F6" stroke-width="1.8"/></svg>`,
+    rx: [
+      { name: 'Prednisone 10mg', details: '5-day taper · Dr. Ellis · Current course', status: '⚠ Monitor closely', statusColor: 'var(--red)' }
+    ],
+    history: ['📧 Oct 17 — Insurance query escalated', '💬 Oct 10 — Coverage appeal submitted on WhatsApp', '📧 Oct 3 — EOB emailed via SES'],
+    messages: `
+      <div style="font-size:10px;color:var(--gray-text);text-align:center;margin:4px 0;">Oct 17, 4:02 PM</div>
+      <div class="msg-row"><div>
+        <div class="msg-channel-tag email">Amazon SES · Inbound</div>
+        <div class="msg-bubble inbound">I've received an Explanation of Benefits that doesn't match what I was told. My Prednisone was supposed to be covered at 100% but I was charged $180. I need someone to look into this urgently.</div>
+        <div class="msg-time">4:02 PM</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag email" style="text-align:right;">Amazon SES · OmniCare AI</div>
+        <div class="msg-bubble outbound">Hi Lisa, I've reviewed your Cigna HMO policy and the EOB in question. There appears to be a discrepancy. I'm escalating this to our Patient Advocate team with all documentation attached. You'll hear back within 2 business hours.</div>
+        <div class="msg-time">4:03 PM · Sent ✓✓</div>
+      </div></div>
+      <div class="msg-row outbound"><div>
+        <div class="msg-channel-tag wa" style="text-align:right;color:#F59E0B;">⚠ Escalation Notice · Human Review Required</div>
+        <div class="msg-bubble outbound" style="border-left:3px solid #F59E0B;">Case escalated to Patient Advocate: <strong>Billing discrepancy \$180</strong> — Cigna HMO claim #2024-08847. Priority: HIGH. Assigned to: Jennifer M. (ext. 4521)</div>
+        <div class="msg-time">4:04 PM · Internal</div>
+      </div></div>`
+  }
+};
+
+// ── OPEN CHANNEL FILTER (sidebar click) ──
+function openChannelFilter(channel) {
+  // 1. Navigate to Unified Inbox
+  const inboxNavItem = document.querySelector('.nav-item[onclick*="s2"]');
+  showScreen('s2', inboxNavItem);
+
+  // 2. Filter conversations
+  const tabMap = { whatsapp: 'inbox-tab-whatsapp', rcs: 'inbox-tab-rcs', ses: 'inbox-tab-ses' };
+  const tabEl = document.getElementById(tabMap[channel]);
+  if (tabEl) filterInboxByChannel(channel, tabEl);
+
+  // 3. Flash the sidebar channel item
+  document.querySelectorAll('.channel-item').forEach(ci => ci.classList.remove('active-channel'));
+  const idx = { whatsapp: 0, rcs: 1, ses: 2 }[channel];
+  const allChannelItems = document.querySelectorAll('.channel-item');
+  if (allChannelItems[idx]) {
+    allChannelItems[idx].classList.add('active-channel');
+    setTimeout(() => allChannelItems[idx].classList.remove('active-channel'), 1200);
+  }
+}
+
+// ── FILTER INBOX BY CHANNEL ──
+function filterInboxByChannel(channel, tabEl) {
+  // Highlight tab
+  document.querySelectorAll('#s2 .inbox-categories .inbox-cat-item').forEach(t => t.classList.remove('active'));
+  if (tabEl) tabEl.classList.add('active');
+
+  // Show/hide conv items
+  const items = document.querySelectorAll('.conv-item');
+  let firstVisible = null;
+  items.forEach(item => {
+    const ch = item.getAttribute('data-channel');
+    const match = !channel || ch === channel;
+    item.style.display = match ? '' : 'none';
+    if (match && !firstVisible) firstVisible = item;
+  });
+
+  // Auto-select first visible conversation
+  if (firstVisible) {
+    const patientId = firstVisible.getAttribute('data-patient');
+    selectConv(firstVisible, patientId);
+  }
+
+  const labels = { whatsapp: 'WhatsApp', rcs: 'RCS / SMS', ses: 'Amazon SES Email' };
+  showToast(`📬 Showing ${labels[channel] || 'all'} conversations`, 'info');
+}
+
+// ── SELECT CONVERSATION (with full dynamic thread + profile update) ──
+function selectConv(el, patientId) {
   document.querySelectorAll('.conv-item').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
+  if (el) el.classList.add('active');
+
+  const p = PATIENTS[patientId];
+  if (!p) return;
+
+  // — Thread header —
+  const threadHeader = document.querySelector('.thread-header');
+  if (threadHeader) {
+    threadHeader.innerHTML = `
+      <div class="feed-avatar" style="background:${p.avatarColor};width:34px;height:34px;font-size:12px;">${p.initials}</div>
+      <div class="thread-header-info">
+        <div class="thread-header-name">${p.name}</div>
+        <div class="thread-header-meta">
+          <span>${p.phone}</span> ·
+          <span>Patient ${p.id}</span> ·
+          <span class="feed-status-pill ${p.statusClass}" style="margin:0;">${p.status}</span>
+        </div>
+      </div>`;
+  }
+
+  // — Thread messages —
+  const threadMsgs = document.getElementById('thread-msgs');
+  if (threadMsgs) {
+    threadMsgs.innerHTML = p.messages;
+    setTimeout(() => { threadMsgs.scrollTop = threadMsgs.scrollHeight; }, 80);
+  }
+
+  // — Profile panel —
+  const profilePanel = document.querySelector('.profile-panel');
+  if (profilePanel) {
+    const rxHTML = p.rx.map(rx => `
+      <div class="rx-item">
+        <div class="rx-name">${rx.name}</div>
+        <div class="rx-details">${rx.details}</div>
+        <div class="rx-status" style="color:${rx.statusColor};">${rx.status}</div>
+      </div>`).join('');
+    const histHTML = p.history.map(h => `<div>${h}</div>`).join('');
+    profilePanel.innerHTML = `
+      <div class="profile-avatar-block">
+        <div class="profile-big-avatar" style="background:${p.avatarColor};">${p.initials}</div>
+        <div class="profile-name">${p.name}</div>
+        <div class="profile-id">Patient ${p.id} · Active</div>
+        <div class="profile-channels">
+          <div class="profile-channel-icon" style="border-color:${p.channelColor}22;">${p.channelIcon}</div>
+        </div>
+      </div>
+      <div class="profile-field"><div class="profile-field-label">Channel</div><div class="profile-field-value">${p.channel}</div></div>
+      <div class="profile-field"><div class="profile-field-label">Phone</div><div class="profile-field-value">${p.phone}</div></div>
+      <div class="profile-field"><div class="profile-field-label">Email</div><div class="profile-field-value">${p.email}</div></div>
+      <div class="profile-field"><div class="profile-field-label">Date of Birth</div><div class="profile-field-value">${p.dob}</div></div>
+      <div class="profile-field"><div class="profile-field-label">Primary Care</div><div class="profile-field-value">${p.primaryCare}</div></div>
+      <div class="profile-field"><div class="profile-field-label">Insurance</div><div class="profile-field-value">${p.insurance}</div></div>
+      <div class="profile-section-title">Active Prescriptions</div>
+      ${rxHTML}
+      <div class="profile-section-title">Conversation History</div>
+      <div style="font-size:12px;color:var(--gray-text);line-height:1.6;">${histHTML}</div>`;
+  }
 }
 
 function sendComposerReply() {
