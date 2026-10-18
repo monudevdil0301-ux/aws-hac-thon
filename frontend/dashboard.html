@@ -1297,27 +1297,32 @@
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#172B4D" stroke-width="2"/><path d="M22 6l-10 7L2 6" stroke="#172B4D" stroke-width="2"/></svg>
               AWS CDS Multi-Channel Runtime Architecture
             </div>
-            <span style="font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-light);padding:3px 8px;border-radius:12px;">Active Pipeline</span>
+            <span style="font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-light);padding:3px 8px;border-radius:12px;cursor:pointer;" onclick="checkBackendStatusModal()" title="View full topology details">Active Pipeline ↗</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:12px;align-items:center;">
-            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px;text-align:center;">
+          <div style="display:grid;grid-template-columns:repeat(7, 1fr);gap:10px;align-items:center;">
+            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;transition:transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'" onclick="openChannelFilter('whatsapp')">
               <div style="font-size:18px;margin-bottom:4px;">📱</div>
-              <div style="font-size:12px;font-weight:700;color:var(--navy);">Patient Touchpoint</div>
-              <div style="font-size:10px;color:var(--gray-text);margin-top:2px;">WhatsApp · RCS · Email</div>
+              <div style="font-size:11px;font-weight:700;color:var(--navy);">Patient Touchpoint</div>
+              <div style="font-size:9.5px;color:var(--gray-text);margin-top:2px;">WhatsApp · RCS · Email</div>
             </div>
-            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:16px;">➔</div>
-            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:14px;">➔</div>
+            <div style="background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;" onclick="checkBackendStatusModal()">
               <div style="font-size:18px;margin-bottom:4px;">⚡</div>
-              <div style="font-size:12px;font-weight:700;color:var(--navy);">AWS CDS Ingestion</div>
-              <div style="font-size:10px;color:var(--gray-text);margin-top:2px;">EUM Social &amp; Pinpoint v2</div>
+              <div style="font-size:11px;font-weight:700;color:var(--navy);">AWS CDS Ingestion</div>
+              <div style="font-size:9.5px;color:var(--gray-text);margin-top:2px;">EUM Social &amp; Pinpoint v2</div>
             </div>
-            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:16px;">➔</div>
-            <div style="background:rgba(20,184,166,0.1);border:1.5px solid var(--teal);border-radius:8px;padding:12px;text-align:center;">
+            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:14px;">➔</div>
+            <div style="background:rgba(20,184,166,0.1);border:1.5px solid var(--teal);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;" onclick="showScreen('s3',document.querySelectorAll('.nav-item')[2])">
               <div style="font-size:18px;margin-bottom:4px;">🧠</div>
-              <div style="font-size:12px;font-weight:700;color:var(--teal-mid);">Bedrock AgentCore</div>
-              <div style="font-size:10px;color:var(--navy);font-weight:500;margin-top:2px;">Claude 3.5 + Guardrails</div>
+              <div style="font-size:11px;font-weight:700;color:var(--teal-mid);">Bedrock AgentCore</div>
+              <div style="font-size:9.5px;color:var(--navy);font-weight:500;margin-top:2px;">Claude 3.5 + Guardrails</div>
             </div>
-          </div>
+            <div style="text-align:center;color:var(--teal);font-weight:700;font-size:14px;">➔</div>
+            <div style="background:rgba(59,130,246,0.08);border:1.5px solid rgba(59,130,246,0.3);border-radius:8px;padding:12px 8px;text-align:center;cursor:pointer;" onclick="checkBackendStatusModal()">
+              <div style="font-size:18px;margin-bottom:4px;">🗄️</div>
+              <div style="font-size:11px;font-weight:700;color:var(--blue);">DynamoDB Context</div>
+              <div style="font-size:9.5px;color:var(--gray-text);margin-top:2px;">Session &amp; Clinical State</div>
+            </div>
         </div>
       </div>
 
@@ -1354,7 +1359,7 @@
           <div class="inbox-panel">
             <div class="conv-search">
               <svg class="conv-search-icon" width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#64748B" stroke-width="2"/><path d="M21 21l-4.35-4.35" stroke="#64748B" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Search conversations…" />
+              <input type="text" id="conv-search-input" placeholder="Search conversations by name or prescription…" oninput="filterConvSearch(this.value)" />
             </div>
             <div class="conv-list">
               <div class="conv-item active" data-channel="whatsapp" data-patient="alex" onclick="selectConv(this,'alex')">
@@ -1751,8 +1756,8 @@
                   </div>
                 </div>
                 <div class="phone-input">
-                  <input class="phone-input-field" type="text" placeholder="Type a message" />
-                  <div class="phone-send">
+                  <input class="phone-input-field" id="phone-user-input" type="text" placeholder="Type a message (e.g. Yes please)..." onkeydown="if(event.key==='Enter') sendPhoneSimulatorMsg()" />
+                  <div class="phone-send" onclick="sendPhoneSimulatorMsg()" title="Send WhatsApp message" style="cursor:pointer;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </div>
                 </div>
@@ -2499,6 +2504,72 @@ function sendComposerReply() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ channel: 'whatsapp', sender: '+15552345678', text: txt })
   }).catch(() => {});
+}
+
+// ── REAL-TIME CONVERSATION SEARCH FILTER ──
+function filterConvSearch(query) {
+  const q = (query || '').toLowerCase().trim();
+  const items = document.querySelectorAll('.conv-item');
+  let matchCount = 0;
+  let firstMatch = null;
+
+  items.forEach(item => {
+    const name = (item.querySelector('.conv-name')?.textContent || '').toLowerCase();
+    const preview = (item.querySelector('.conv-preview')?.textContent || '').toLowerCase();
+    const matches = !q || name.includes(q) || preview.includes(q);
+    item.style.display = matches ? '' : 'none';
+    if (matches) {
+      matchCount++;
+      if (!firstMatch) firstMatch = item;
+    }
+  });
+
+  if (firstMatch && q) {
+    const patientId = firstMatch.getAttribute('data-patient');
+    if (patientId) selectConv(firstMatch, patientId);
+  }
+}
+
+// ── PHONE SIMULATOR LIVE CHAT (Screen 4) ──
+function sendPhoneSimulatorMsg() {
+  const input = document.getElementById('phone-user-input');
+  if (!input || !input.value.trim()) return;
+  const userText = input.value.trim();
+  input.value = '';
+
+  const msgsContainer = document.getElementById('phone-msgs');
+  const now = new Date();
+  const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0') + ' PM';
+
+  // Append user outbound message
+  const userMsgEl = document.createElement('div');
+  userMsgEl.className = 'phone-msg out';
+  userMsgEl.innerHTML = `${userText}<div class="phone-msg-time">${timeStr} ✓✓</div>`;
+  msgsContainer.appendChild(userMsgEl);
+  msgsContainer.scrollTop = msgsContainer.scrollHeight;
+
+  // Simulate Bedrock AgentCore response after realistic processing latency
+  setTimeout(() => {
+    const aiMsgEl = document.createElement('div');
+    aiMsgEl.className = 'phone-msg in';
+    aiMsgEl.style.position = 'relative';
+
+    let replyText = `Thanks for your message! Our clinical orchestrator has received your update and logged it under your profile.`;
+    const lower = userText.toLowerCase();
+
+    if (lower.includes('refill') || lower.includes('metformin')) {
+      replyText = `Understood! I'm verifying your refill for Metformin 500mg. Would you like pickup at CVS Oak St (0.4 mi) or delivery?`;
+    } else if (lower.includes('cvs') || lower.includes('yes') || lower.includes('pickup')) {
+      replyText = `✅ Perfect! Refill confirmed at CVS 2847 Oak St. Ready in 30 minutes. An SES clinical summary has been emailed.`;
+    } else if (lower.includes('doctor') || lower.includes('appointment')) {
+      replyText = `Dr. Sarah Chen has slots open on Monday at 9:00 AM or 11:30 AM. Would Monday morning suit you?`;
+    }
+
+    aiMsgEl.innerHTML = `${replyText}<div class="phone-msg-time">${timeStr}</div>`;
+    msgsContainer.appendChild(aiMsgEl);
+    msgsContainer.scrollTop = msgsContainer.scrollHeight;
+    showToast('💬 WhatsApp reply delivered via AWS EUM Social', 'info');
+  }, 900);
 }
 
 // ── APPROVE ALL ──
