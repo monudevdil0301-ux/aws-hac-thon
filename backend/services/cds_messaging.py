@@ -109,7 +109,7 @@ class CDSMessagingService:
                 )
                 self._record_audit_event("whatsapp", to_phone_number, list_payload, "SUCCESS")
                 return {"status": "SENT", "channel": "whatsapp", "type": "interactive_list", "message_id": response.get("messageId", "wa_live_list_id")}
-            except ClientError as e:
+            except Exception as e:
                 logger.error(f"AWS EUM Social WhatsApp interactive list dispatch error: {e}")
                 self._record_audit_event("whatsapp", to_phone_number, list_payload, f"ERROR: {str(e)}")
                 return {"status": "FAILED", "error": str(e)}
@@ -171,7 +171,7 @@ class CDSMessagingService:
                 )
                 self._record_audit_event("whatsapp", to_phone_number, message_payload, "SUCCESS")
                 return {"status": "SENT", "channel": "whatsapp", "message_id": response.get("messageId", "wa_live_id")}
-            except ClientError as e:
+            except Exception as e:
                 logger.error(f"AWS EUM Social WhatsApp dispatch error: {e}")
                 self._record_audit_event("whatsapp", to_phone_number, message_payload, f"ERROR: {str(e)}")
                 return {"status": "FAILED", "error": str(e)}
@@ -241,7 +241,7 @@ class CDSMessagingService:
                 )
                 self._record_audit_event("rcs", to_phone_number, rcs_card_payload, "SUCCESS")
                 return {"status": "SENT", "channel": "rcs", "message_id": response.get("MessageId", "rcs_live_id")}
-            except ClientError as e:
+            except Exception as e:
                 logger.error(f"AWS EUM RCS dispatch error: {e}")
                 self._record_audit_event("rcs", to_phone_number, rcs_card_payload, f"ERROR: {str(e)}")
                 return {"status": "FAILED", "error": str(e)}
@@ -369,7 +369,7 @@ class CDSMessagingService:
                 response = self.ses_client.send_email(**email_payload)
                 self._record_audit_event("ses", to_email, email_payload, "SUCCESS")
                 return {"status": "SENT", "channel": "ses", "message_id": response.get("MessageId", "ses_live_id")}
-            except ClientError as e:
+            except Exception as e:
                 logger.error(f"Amazon SES dispatch error: {e}")
                 self._record_audit_event("ses", to_email, email_payload, f"ERROR: {str(e)}")
                 return {"status": "FAILED", "error": str(e)}

@@ -76,7 +76,23 @@ class SessionMemoryManager:
             try:
                 res = self.dynamodb_table.get_item(Key={"patient_id": cleaned})
                 if "Item" in res:
-                    return res["Item"]
+                    item = res["Item"]
+                    if "conversation_history" not in item or not isinstance(item["conversation_history"], list):
+                        item["conversation_history"] = []
+                    if "active_case" not in item or not isinstance(item["active_case"], dict):
+                        base = self._in_memory_db.get("patient_alex_rivera", {})
+                        item["active_case"] = base.get("active_case", {
+                            "case_id": "CASE-9021",
+                            "condition": "Acute Bronchitis & Allergic Rhinitis",
+                            "stage": "INTAKE_INITIALIZED",
+                            "medications": [
+                                {"medication": "Amoxicillin", "dosage": "500mg", "frequency": "3x daily for 7 days", "instructions": "Take with meals"},
+                                {"medication": "Albuterol Inhaler", "dosage": "90mcg", "frequency": "1-2 puffs every 4-6 hrs", "instructions": "As needed for wheezing"}
+                            ],
+                            "preferred_pharmacy": None,
+                            "pickup_time": None
+                        })
+                    return item
             except Exception:
                 pass
         return self._in_memory_db.get(cleaned) or self._in_memory_db.get("patient_alex_rivera")
