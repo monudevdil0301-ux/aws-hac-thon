@@ -239,21 +239,59 @@
 
   .screen-content { flex: 1; overflow-y: auto; padding: 28px; }
 
-  /* ── SCREEN TOGGLE ── */
-  .screen { display: none; animation: fadeIn 200ms ease; }
-  .screen.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  /* ── SCREEN TOGGLE & TRANSITIONS ── */
+  .screen { 
+    display: none; 
+    opacity: 0;
+    translate: 0 10px;
+    transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1), translate 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .screen.active { 
+    display: block; 
+    opacity: 1;
+    translate: 0 0;
+    animation: screenReveal 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes screenReveal {
+    0% { opacity: 0; translate: 0 12px; filter: blur(2px); }
+    100% { opacity: 1; translate: 0 0; filter: blur(0); }
+  }
 
-  /* ── CARDS ── */
+  /* ── CARDS & HOVER PHYSICS ── */
   .card {
     background: var(--gray-card);
     border: 1px solid var(--gray-border);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    transition: all var(--transition);
+    transition: box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1), border-color 260ms ease, translate 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    translate: 0 0;
   }
   .card:hover {
     box-shadow: var(--shadow-md);
+    translate: 0 -2px;
+  }
+
+  /* Shimmer effect on interactive buttons */
+  .hero-cta {
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-cta::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -60%;
+    width: 40%; height: 200%;
+    background: linear-gradient(
+      60deg,
+      transparent,
+      rgba(255, 255, 255, 0.25),
+      transparent
+    );
+    transform: rotate(25deg);
+    transition: all 650ms ease;
+  }
+  .hero-cta:hover::after {
+    left: 130%;
   }
 
   /* ════════════════════════════════════
@@ -386,20 +424,36 @@
   .section-title { font-size: 14px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 8px; }
   .section-action { font-size: 12px; color: var(--teal); font-weight: 500; cursor: pointer; }
 
-  /* Live Feed */
-  .feed-list { padding: 8px 0; max-height: 320px; overflow-y: auto; }
+  /* Live Feed with Organic Entrance Physics */
+  .feed-list { padding: 8px 0; max-height: 340px; overflow-y: auto; }
   .feed-item {
-    display: flex; align-items: flex-start; gap: 12px;
-    padding: 10px 20px;
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 12px 22px;
     border-bottom: 1px solid var(--gray-border);
-    transition: background var(--transition);
-    animation: slideIn 300ms ease;
+    transition: background 200ms ease, translate 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    animation: slideInFeed 360ms cubic-bezier(0.16, 1, 0.3, 1);
+    translate: 0 0;
   }
-  @keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
-  .feed-item:hover { background: var(--gray-bg); }
+  @keyframes slideInFeed { 
+    from { opacity: 0; translate: -12px 0; filter: blur(1px); } 
+    to { opacity: 1; translate: 0 0; filter: blur(0); } 
+  }
+  .feed-item:hover { 
+    background: #FFFFFF; 
+    translate: 4px 0;
+  }
   .feed-item:last-child { border-bottom: none; }
   .feed-avatar {
-    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: scale 200ms ease;
+    scale: 1;
+  }
+  .feed-item:hover .feed-avatar {
+    scale: 1.08;
+  }
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 700; color: #fff;
   }
@@ -657,24 +711,46 @@
   .exec-run-btn.running { background: var(--amber); }
 
   .step-card {
-    padding: 12px 16px;
+    padding: 14px 18px;
     border-bottom: 1px solid var(--gray-border);
     cursor: pointer;
-    transition: background var(--transition);
+    transition: background 200ms ease, translate 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
     position: relative;
+    translate: 0 0;
   }
-  .step-card:hover { background: var(--gray-bg); }
-  .step-card.active-step { background: var(--teal-light); border-left: 3px solid var(--teal); }
-  .step-card.expanded .step-json { display: block; }
-  .step-header { display: flex; align-items: center; gap: 8px; }
-  .step-num { width: 20px; height: 20px; border-radius: 50%; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .step-num.success { background: rgba(16,185,129,0.15); color: var(--green); }
-  .step-num.running { background: rgba(20,184,166,0.15); color: var(--teal); animation: spin 1.2s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .step-num.warning { background: rgba(245,158,11,0.15); color: var(--amber); }
-  .step-num.error { background: rgba(239,68,68,0.12); color: var(--red); }
+  .step-card:hover { 
+    background: #FAF9F6; 
+    translate: 2px 0;
+  }
+  .step-card.active-step { 
+    background: linear-gradient(90deg, rgba(13,148,136,0.12) 0%, rgba(212,175,55,0.06) 100%); 
+    border-left: 3.5px solid var(--teal); 
+    box-shadow: inset 0 0 12px rgba(13,148,136,0.06);
+  }
+  .step-card.expanded .step-json { 
+    display: block; 
+    animation: fadeInJson 240ms ease;
+  }
+  @keyframes fadeInJson {
+    from { opacity: 0; translate: 0 -4px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  .step-header { display: flex; align-items: center; gap: 10px; }
+  .step-num { 
+    width: 22px; height: 22px; border-radius: 50%; font-size: 10.5px; font-weight: 700; 
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .step-num.success { background: rgba(5,150,105,0.15); color: var(--green); }
+  .step-num.running { 
+    background: rgba(13,148,136,0.2); color: var(--teal); 
+    animation: spinStep 1s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+  }
+  @keyframes spinStep { to { transform: rotate(360deg); } }
+  .step-num.warning { background: rgba(217,119,6,0.15); color: var(--amber); }
+  .step-num.error { background: rgba(220,38,38,0.15); color: var(--red); }
   .step-num.pending { background: var(--gray-border); color: var(--gray-text); }
-  .step-name { font-size: 13px; font-weight: 600; color: var(--navy); flex: 1; }
+  .step-name { font-size: 13px; font-weight: 700; color: var(--navy); flex: 1; font-family: var(--font); }
   .step-pill {
     font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px;
   }
@@ -2302,24 +2378,43 @@ function switchFlowTab(el, viewId) {
   });
 }
 
-// ── EXECUTION ANIMATION ──
+// ── EXECUTION ANIMATION WITH LIVE FLOW SYNCHRONIZATION ──
 function startExecution() {
   const btn = document.getElementById('run-btn');
-  btn.textContent = '⏳ Running…';
+  btn.textContent = '⏳ Executing…';
   btn.classList.add('running');
   const container = document.getElementById('steps-list');
   container.innerHTML = '';
   stepsInit = false;
 
+  // Trigger live backend API call in parallel
+  fetch('/api/demo/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario: 'prescription_refill' })
+  }).then(r => r.json()).then(data => {
+    if (data.run_id) currentRunId = data.run_id;
+  }).catch(() => {});
+
   STEPS.forEach((step, i) => {
     setTimeout(() => {
+      // Highlight corresponding flow node on the right canvas
+      document.querySelectorAll('.flow-node').forEach((n, ni) => {
+        n.classList.toggle('active-node', ni === i);
+        if (ni === i) {
+          n.style.transform = 'scale(1.03)';
+          n.style.borderColor = 'var(--teal)';
+          setTimeout(() => { n.style.transform = 'scale(1)'; }, 350);
+        }
+      });
+
       const div = document.createElement('div');
       div.className = 'step-card active-step';
       div.innerHTML = `
         <div class="step-header">
           <div class="step-num running">⟳</div>
           <div class="step-name">${step.name}</div>
-          <span class="step-pill running">Running</span>
+          <span class="step-pill running">Invoking Tool</span>
           <span class="step-duration">…</span>
         </div>
         <div class="step-sub">${step.sub}</div>
@@ -2340,13 +2435,15 @@ function startExecution() {
           <div class="step-json" style="display:none;">${step.json}</div>
         `;
         div.onclick = () => { div.classList.toggle('expanded'); };
-        if(i === STEPS.length - 1) {
+        if (i === STEPS.length - 1) {
           btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Run Demo Flow';
           btn.classList.remove('running');
           stepsInit = true;
+          showToast('✓ End-to-End Bedrock Agent Execution Complete · ' + currentRunId, 'success', 5000);
+          document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active-node'));
         }
       }, 600);
-    }, i * 900);
+    }, i * 750);
   });
   renderFlowNodes();
   renderLogs();
