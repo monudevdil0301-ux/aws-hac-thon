@@ -836,6 +836,10 @@
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#14B8A6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           ⚡ API Demo
         </button>
+        <button class="hero-cta" style="padding:6px 14px;font-size:12px;background:#1D4ED8;border:none;" onclick="triggerLiveSESEmail()" title="Dispatch live clinical summary email via Amazon SES v2">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          📧 Live SES Email
+        </button>
         <button class="hero-cta" style="padding:6px 14px;font-size:12px;" onclick="runEndToEnd()">
           <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
           Run Full Demo
@@ -1638,6 +1642,27 @@ function runAPIDemoRequest() {
       setTimeout(()=> showToast('✓ ' + (data.steps||{length:8}).length + ' Bedrock AgentCore tools invoked · HANDOFF_EXECUTED · ' + rid, 'success', 4500), 2000);
     })
     .catch(()=> setTimeout(()=> showToast('✓ 8 Bedrock AgentCore tools invoked · HANDOFF_EXECUTED · ' + runId, 'success', 4500), 2000));
+}
+
+function triggerLiveSESEmail() {
+  showToast('📧 Sending clinical instructions packet via live Amazon SES (sesv2)...', 'info', 3000);
+  fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ patient_name: 'Alex Rivera' })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'SENT') {
+      const shortId = (data.message_id || 'ses_live').substring(0, 24);
+      showToast('✓ Live Amazon SES Email Sent! ID: ' + shortId + '… · Check your Gmail inbox!', 'success', 7000);
+    } else {
+      showToast('SES response: ' + (data.error || 'Verified'), 'info', 5000);
+    }
+  })
+  .catch(err => {
+    showToast('SES Dispatch error: ' + err.message, 'info', 4000);
+  });
 }
 
 // ── APPROVAL MODAL (Gap 6) ──
